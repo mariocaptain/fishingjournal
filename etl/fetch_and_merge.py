@@ -2,6 +2,9 @@ import os, json, requests, pandas as pd
 from datetime import datetime, timedelta, timezone
 from dateutil import tz
 from lunarcalendar import Converter, Solar
+import traceback
+import math
+import ast
 
 # ===== Cấu hình =====
 LAT = 16.3500
@@ -31,7 +34,8 @@ def to_utc_iso(dt_local):
     return dt_local.astimezone(timezone.utc).isoformat()
 
 def parse_ddmmyyyy(s):
-    return datetime.strptime(s, "%d/%m/%Y").date()
+    # Bản an toàn: nếu lỗi format thì raise ValueError rõ ràng
+    return datetime.strptime(str(s).strip(), "%d/%m/%Y").date()
 
 def fmt_ddmmyyyy(d):
     return d.strftime("%d/%m/%Y")
@@ -47,15 +51,18 @@ def load_history(path):
             "App Fishing Score","User Fishing Score","Fish Caught","User Notes","Pressure"]
     if not os.path.exists(path):
         return pd.DataFrame(columns=cols)
-    df = pd.read_csv(path, dtype=str)
+    # Đọc toàn bộ dưới dạng chuỗi, không tự chuyển NaN
+    df = pd.read_csv(path, dtype=str, keep_default_na=False, na_values=[])
     for c in cols:
         if c not in df.columns:
             df[c] = ""
-    # QUAN TRỌNG: loại NaN để không ghi NaN vào JSON
+    # Loại NaN/None text còn sót (nếu có)
+    df = df.replace({"NaN": "", "nan": "", "NONE": "", "None": "", "NULL": "", "null": ""})
     df = df.fillna("")
     return df
 
 def save_history(df, path):
+    # Chỉ giữ đến hôm nay + sort
     today = today_local_date()
     df["_d"] = df["Vietnam Date"].apply(parse_ddmmyyyy)
     df = df[df["_d"] <= today].copy().sort_values("_d").drop(columns=["_d"])
@@ -79,7 +86,7 @@ def get_missing_dates(df):
         cur += timedelta(days=1)
     return res
 
-# ---- HTTP gọi với danh sách keys (fallback) ----
+# ---- HTTP với fallback 3 keys ----
 def sg_request(path, params):
     if not SG_KEYS:
         raise RuntimeError("No Stormglass API keys provided.")
@@ -88,14 +95,12 @@ def sg_request(path, params):
         try:
             url = f"{SG_BASE}{path}"
             r = requests.get(url, headers={"Authorization": key}, params=params, timeout=60)
-            if r.status_code >= 200 and r.status_code < 300:
+            if 200 <= r.status_code < 300:
                 return r.json()
-            else:
-                # Nếu lỗi quota (402/429) hoặc lỗi khác: thử key tiếp theo
-                last_err = f"HTTP {r.status_code}: {r.text[:200]}"
+            # log lỗi của từng key (không in key)
+            last_err = f"[Key#{idx}] HTTP {r.status_code}: {r.text[:200]}"
         except Exception as e:
-            last_err = str(e)
-    # Hết 3 keys vẫn lỗi
+            last_err = f"[Key#{idx}] {e}"
     raise RuntimeError(f"All Stormglass keys failed. Last error: {last_err}")
 
 def fetch_tide_extremes(start_date, end_date):
@@ -149,10 +154,15 @@ def build_new_rows(missing_dates, tide_extremes, weather_hours):
         if isinstance(val, dict):
             val = val.get("noaa")
         if val is not None:
-            pres_by_day.setdefault(d, []).append({
-                "time": to_local_iso(h["time"]),
-                "pressure": float(val)
-            })
+            try:
+                fval = float(val)
+            except Exception:
+                fval = None
+            if fval is not None and not math.isnan(fval) and not math.isinf(fval):
+                pres_by_day.setdefault(d, []).append({
+                    "time": to_local_iso(h["time"]),
+                    "pressure": fval
+                })
 
     rows = []
     for d in missing_dates:
@@ -161,7 +171,7 @@ def build_new_rows(missing_dates, tide_extremes, weather_hours):
         rows.append({
             "Vietnam Date": vnd,
             "Lunar Date": lunar,
-            "Tidal Data": repr(tide_by_day.get(vnd, [])),   # giữ format nháy đơn như file gốc
+            "Tidal Data": repr(tide_by_day.get(vnd, [])),   # giữ format nháy đơn cho tương thích file cũ
             "Pressure Data": repr(pres_by_day.get(vnd, [])),
             "Sea Level": "",
             "Water Temperature": "",
@@ -176,9 +186,8 @@ def build_new_rows(missing_dates, tide_extremes, weather_hours):
         })
     return pd.DataFrame(rows) if rows else None
 
+# ===== Xuất JSON cho web (siêu an toàn) =====
 def export_site_json(df, error_msg=None):
-    import ast, math, json
-
     def parse_repr(s):
         if not isinstance(s, str) or not s.strip():
             return []
@@ -206,46 +215,42 @@ def export_site_json(df, error_msg=None):
         except Exception:
             return None
 
-    # Nếu được truyền error_msg từ chỗ khác
     if error_msg:
         with open(SITE_JSON, "w", encoding="utf-8") as f:
             json.dump({"error": error_msg}, f, ensure_ascii=False, indent=2)
         return
 
     try:
-        # Giới hạn đến hôm nay (không ghi tương lai)
         df = df.copy()
+        # Lọc đến hôm nay, bỏ NaN
         df["_d"] = df["Vietnam Date"].apply(parse_ddmmyyyy)
         df = df[df["_d"] <= today_local_date()].sort_values("_d").drop(columns=["_d"])
         df = df.fillna("")
+        df = df.replace({"NaN": "", "nan": "", "NONE": "", "None": "", "NULL": "", "null": ""})
 
         days_out = []
         for _, row in df.iterrows():
-            # Parse 2 cột list (an toàn, không lỗi thì trả list, lỗi trả [])
             tidal_list = parse_repr(row.get("Tidal Data", ""))
             press_list = parse_repr(row.get("Pressure Data", ""))
 
-            # Dọn từng phần tử (KHÔNG dùng biến vòng lặp ra ngoài)
             tidal_data = []
             if isinstance(tidal_list, list):
                 for item in tidal_list:
-                    if not isinstance(item, dict):
-                        continue
-                    tidal_data.append({
-                        "time":   clean_str(item.get("time")),
-                        "height": clean_num(item.get("height")),
-                        "type":   clean_str(item.get("type")),
-                    })
+                    if isinstance(item, dict):
+                        tidal_data.append({
+                            "time":   clean_str(item.get("time")),
+                            "height": clean_num(item.get("height")),
+                            "type":   clean_str(item.get("type")),
+                        })
 
             pressure_data = []
             if isinstance(press_list, list):
                 for item in press_list:
-                    if not isinstance(item, dict):
-                        continue
-                    pressure_data.append({
-                        "time":     clean_str(item.get("time")),
-                        "pressure": clean_num(item.get("pressure")),
-                    })
+                    if isinstance(item, dict):
+                        pressure_data.append({
+                            "time":     clean_str(item.get("time")),
+                            "pressure": clean_num(item.get("pressure")),
+                        })
 
             days_out.append({
                 "vietnam_date": clean_str(row.get("Vietnam Date")),
@@ -257,15 +262,22 @@ def export_site_json(df, error_msg=None):
                 "user_notes":   clean_str(row.get("User Notes")),
             })
 
-        # Ghi JSON (không cho phép NaN)
+        # Thêm metadata debug để bạn dễ soát trên web
+        payload = {
+            "meta": {
+                "generated_at": datetime.now(LOCAL_TZ).isoformat(),
+                "rows": len(days_out),
+            },
+            "days": days_out
+        }
         with open(SITE_JSON, "w", encoding="utf-8") as f:
-            json.dump({"days": days_out}, f, ensure_ascii=False, indent=2, allow_nan=False)
+            json.dump(payload, f, ensure_ascii=False, indent=2, allow_nan=False)
 
-    except Exception as e:
-        # Nếu lỗi, ghi ra data.json để web đọc được thông báo
+    except Exception:
+        # Ghi stacktrace đầy đủ để nhìn thấy dòng lỗi ngay trên web
+        msg = "ETL error:\n" + traceback.format_exc()
         with open(SITE_JSON, "w", encoding="utf-8") as f:
-            json.dump({"error": f"ETL error: {e}"}, f, ensure_ascii=False, indent=2)
-        # Re-raise để có log trong Actions
+            json.dump({"error": msg}, f, ensure_ascii=False, indent=2)
         raise
 
 def main():
@@ -283,11 +295,10 @@ def main():
         export_site_json(df)  # không lỗi → ghi bình thường
         print(f"[OK] rows={len(df)} → {SITE_JSON}")
     except Exception as e:
-        # bất kỳ lỗi nào (kể cả hết quota 3 keys) → ghi ra JSON cho frontend
         msg = f"ETL error: {e}"
-        export_site_json(None, error_msg=msg)
+        # cũng ghi vào JSON cho web
+        export_site_json(pd.DataFrame(), error_msg=msg)
         print(msg)
-        # Không raise lại để workflow vẫn “success” (tuỳ bạn). Nếu muốn fail: raise
 
 if __name__ == "__main__":
     main()
