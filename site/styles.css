@@ -11,7 +11,7 @@
 *{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial}
-/*
+
 header {
   display:flex;
   align-items:center;
@@ -19,60 +19,14 @@ header {
   padding: 10px 14px;
   background:#0b3d91;
   color:#fff;
-  width: 100vw;                   
+  width: 100vw;                    /* ✅ trải hết chiều ngang màn hình */
   box-sizing: border-box;
 }
-*/
 
 header h1{margin:0;font-size:20px;font-weight:600}
-/*header .tools{display:flex;gap:6px;align-items:center}*/
+header .tools{display:flex;gap:6px;align-items:center}
 header button{background:#1f6feb;border:1px solid #2657a8;color:#fff;padding:5px 9px;border-radius:8px;cursor:pointer}
 header button:hover{filter:brightness(1.08)}
-
-/* --- Top header full width and sticky --- */
-header {
-  position: sticky;        /* bám đỉnh màn hình khi cuộn */
-  top: 0;
-  z-index: 100;
-  width: 100%;             /* ✅ dùng 100%, KHÔNG dùng 100vw để tránh tràn/thu ngắn */
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  background: #0b3d91;
-  color: #fff;
-}
-
-header .tools { 
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;         /* nếu hẹp, nút sẽ xuống dòng gọn gàng */
-}
-
-html, body {
-  max-width: 100%;
-  overflow-x: hidden;      /* ✅ chặn overflow do nút/khung gây ra */
-}
-
-/* --- Main grid --- */
-#grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr)); /* desktop: 2 cột */
-  gap: 16px;
-  padding: 12px;
-  box-sizing: border-box;
-}
-/* --- Responsive breakpoints --- */
-@media (max-width: 900px) {
-  #grid {
-    grid-template-columns: 1fr;    /* ✅ mobile: 1 cột, hết việc “lòi nửa cột” */
-  }
-  header .tools {
-    gap: 6px;
-  }
-}
-
 
 /*
 #login {
