@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <title>Lập An Fishing Journal (Web)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./styles.css" />
+  <!-- Chart.js cho biểu đồ thủy triều -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div id="login">
+    <h2>Đăng nhập</h2>
+    <input id="user" placeholder="Username" />
+    <input id="pass" placeholder="Password" type="password" />
+    <button id="btnLogin">Vào</button>
+    <p class="note">* Login hard-code, chỉ để che giao diện với người lạ.</p>
+  </div>
+
+  <div id="app" class="hidden">
+    <header>
+      <h1>Lập An Fishing Journal</h1>
+      <div>
+        <button id="prev">◀ Trang trước</button>
+        <span id="pageInfo"></span>
+        <button id="next">Trang sau ▶</button>
+      </div>
+    </header>
+
+    <main id="grid"></main>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
