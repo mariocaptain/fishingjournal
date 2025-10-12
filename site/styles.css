@@ -1,113 +1,91 @@
-/* ===== Night mode: phong cách CLI + VS Code ===== */
 :root{
-  --bg: #0c0f11;
-  --bg-soft: #12161a;
-  --panel: #11161a;
-  --text: #d0d0d0;
-  --muted: #9aa0a6;
-  --border: #2a2f36;
-  --accent: #00cc66; /* viền xanh console-style */
+  --bg:#0c0f11; --bg-soft:#12161a; --panel:#11161a;
+  --text:#d0d0d0; --muted:#9aa0a6; --border:#2a2f36; --accent:#00cc66;
+  --cyan:#9cdcfe; --yaxis:#ce9178; --warn:#ff7b72; --weekend-bg:#2b1a10;
 }
 
-/* Layout tổng thể */
-* { box-sizing: border-box; }
-html, body { height: 100%; }
-body {
-  margin: 0;
-  font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-  background: var(--bg);
-  color: var(--text);
+/* ===== Reset & body ===== */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial;
 }
 
-/* Header + pagination */
-header {
+/* ===== Header (thu gọn 2/3) ===== */
+header{
   display:flex; align-items:center; justify-content:space-between;
-  padding: 10px 14px;
-  background: #0b3d91; color:#fff;
+  padding:8px 12px;       /* giảm padding */
+  background:#0b3d91; color:#fff;
 }
+header h1{
+  margin:0;
+  font-size: 20px;        /* ~2/3 cỡ cũ */
+  font-weight:600;
+}
+header .tools{display:flex; gap:6px; align-items:center}
 header button{
-  background: #1f6feb; border: 1px solid #2657a8; color: #fff;
-  padding:6px 10px; border-radius:8px; cursor:pointer;
+  background:#1f6feb; border:1px solid #2657a8; color:#fff;
+  padding:5px 9px; border-radius:8px; cursor:pointer;
 }
-header button:hover{ filter: brightness(1.08); }
+header button:hover{filter:brightness(1.08)}
 
-/* Lưới 2 cột x 5 hàng (cuộn dọc nếu dài) */
-#grid{
-  display:grid;
-  grid-template-columns: repeat(2, minmax(320px, 1fr));
-  gap: 12px;
-  padding: 12px;
-}
-
-/* Card */
-.card{
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 10px;
-  display:flex; flex-direction:column; gap:8px;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.35);
-}
-.card h3{
-  margin: 0;
-  font-size: 15px;
-  padding: 6px 8px;
-  border-left: 3px solid var(--accent);
-  background: var(--bg-soft);
-  border-radius: 8px;
-}
-.meta{ font-size:12px; color: var(--muted); }
-
-/* Canvas wrappers: cố định chiều cao để card không nhảy */
-.canvas-wrap { width:100%; }
-.canvas-wrap.tide     { height: 150px; }   /* yêu cầu mới */
-.canvas-wrap.pressure { height: 120px; }
-
-.canvas-wrap canvas { width:100% !important; height:100% !important; display:block; }
-
-/* Weekend highlight */
-.is-weekend{ background: #1a1f24 !important; }
-
-/* Màu ngày trong tuần (title) */
-.day-monday    { color:#58a6ff; }
-.day-tuesday   { color:#f78166; }
-.day-wednesday { color:#d2a8ff; }
-.day-thursday  { color:#79c0ff; }
-.day-friday    { color:#8b949e; }
-.day-saturday  { color:#ffa657; }
-.day-sunday    { color:#ff7b72; }
-
-/* Login panel */
+/* ===== Login ===== */
 #login{
-  max-width: 360px;
-  margin: 12vh auto;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 18px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+  max-width:360px; margin:12vh auto; background:var(--panel);
+  border:1px solid var(--border); border-radius:12px; padding:18px;
+  box-shadow:0 6px 20px rgba(0,0,0,.45);
+}
+#login .title{
+  text-align:center; font-size:18px; margin-bottom:8px;  /* tiêu đề ở giữa */
 }
 #login input{
-  display:block;
-  width: 80%;
-  max-width: 280px;         /* tránh tràn khung */
-  padding:8px;
-  margin:8px auto;
-  color: var(--text);
-  background: #0f1418;
-  border: 1px solid #29323a;
-  border-radius: 8px;
+  display:block; width:80%; max-width:280px; margin:8px auto; padding:8px;
+  background:#0f1418; color:var(--text); border:1px solid #29323a; border-radius:8px;
 }
 #login button{
-  display:block; width:80%; max-width: 280px; margin:8px auto;
-  padding:8px; border-radius:8px; background:#1f6feb; color:#fff; border:1px solid #2657a8;
-  cursor:pointer;
+  display:block; width:80%; max-width:280px; margin:8px auto; padding:8px;
+  border-radius:8px; background:#1f6feb; border:1px solid #2657a8; color:#fff; cursor:pointer;
 }
-.hidden{ display:none; }
+.hidden{display:none}
 
-/* Monospace cho các block text kỹ thuật (nếu có) */
-pre, .mono{
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: 12px;
-  white-space: pre-wrap;
+/* ===== Grid 2 cột × 5 hàng ===== */
+#grid{
+  display:grid; grid-template-columns: repeat(2, minmax(320px,1fr));
+  gap:12px; padding:12px;
 }
+
+/* ===== Card ===== */
+.card{
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:12px; padding:8px; display:flex; flex-direction:column; gap:8px;
+  box-shadow:0 6px 16px rgba(0,0,0,.35);
+}
+
+/* ===== Title ngày (màu theo weekday) ===== */
+.title{
+  display:flex; align-items:center; gap:8px;
+  background:var(--bg-soft); border-left:3px solid var(--accent);
+  border-radius:8px; padding:6px 8px; font-size:14px;
+}
+.title .wd{font-weight:700}
+.title .greg{color:var(--cyan)}                  /* dương lịch: cyan */
+.title .lunar{color:#000; background:#ff534d;    /* âm lịch: cyan/background đỏ */
+  padding:1px 6px; border-radius:6px; margin-left:auto;}
+.title .forecast-tag{margin-left:6px; color:#f2d; border:1px dashed #f2d; padding:1px 6px; border-radius:6px}
+
+.is-weekend{ background: var(--weekend-bg) }     /* weekend có nền */
+
+.day-sun .wd{ color:#ff7b72; }
+.day-mon .wd{ color:#58a6ff; }
+.day-tue .wd{ color:#f78166; }
+.day-wed .wd{ color:#d2a8ff; }
+.day-thu .wd{ color:#79c0ff; }
+.day-fri .wd{ color:#8b949e; }
+.day-sat .wd{ color:#ffa657; }
+
+/* ===== Canvas vùng hiển thị cố định ===== */
+.canvas-wrap{ width:100% }
+.canvas-wrap.tide{ height:150px }
+.canvas-wrap.pressure{ height:120px }
+.canvas-wrap canvas{ width:100% !important; height:100% !important; display:block }

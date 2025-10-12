@@ -1,28 +1,33 @@
-import os, json, requests, pandas as pd
+# -*- coding: utf-8 -*-
+import os, json, math, traceback
 from datetime import datetime, timedelta, timezone, date
 from dateutil import tz
-from lunarcalendar import Converter, Solar
-import traceback
-import math
+import pandas as pd
+import requests
 import ast
 
-# ===== Cấu hình =====
+# ==== Cấu hình khu vực ====
 LAT = 16.3500
 LON = 107.9000
 LOCAL_TZ = tz.gettz("Asia/Ho_Chi_Minh")
 
-ROOT = os.path.dirname(__file__)
-HISTORY_CSV = os.path.join(ROOT, "..", "data", "history.csv")
-SITE_JSON   = os.path.join(ROOT, "..", "site", "data.json")
+HERE = os.path.abspath(os.path.dirname(__file__))
+ROOT = os.path.abspath(os.path.join(HERE))           # script đặt ở repo root
+DATA_DIR = os.path.join(ROOT, "data")
+SITE_DIR = os.path.join(ROOT, "site")
+os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(SITE_DIR, exist_ok=True)
 
-# ===== Stormglass Keys (3 secrets, fallback lần lượt) =====
+HISTORY_CSV = os.path.join(DATA_DIR, "history.csv")
+SITE_JSON   = os.path.join(SITE_DIR, "data.json")
+
 SG_BASE = "https://api.stormglass.io/v2"
-SG_KEYS = [os.getenv("STORMGLASS_KEY_1", ""),
-           os.getenv("STORMGLASS_KEY_2", ""),
-           os.getenv("STORMGLASS_KEY_3", "")]
+SG_KEYS = [os.getenv("STORMGLASS_KEY_1",""),
+           os.getenv("STORMGLASS_KEY_2",""),
+           os.getenv("STORMGLASS_KEY_3","")]
 
-# ---------- Helpers thời gian ----------
-def today_local_date() -> date:
+# ==== Helpers thời gian ====
+def today_local() -> date:
     return datetime.now(LOCAL_TZ).date()
 
 def to_utc_iso(dt_local: datetime) -> str:
@@ -30,252 +35,221 @@ def to_utc_iso(dt_local: datetime) -> str:
         dt_local = dt_local.replace(tzinfo=LOCAL_TZ)
     return dt_local.astimezone(timezone.utc).isoformat()
 
-def parse_ddmmyyyy(s: str) -> date:
-    return datetime.strptime(str(s).strip(), "%d/%m/%Y").date()
-
-def fmt_ddmmyyyy(d: date) -> str:
+def ddmmyyyy(d: date) -> str:
     return d.strftime("%d/%m/%Y")
 
-def gregorian_to_lunar_ddmm(d: date) -> str:
-    solar = Solar(d.year, d.month, d.day)
-    lunar = Converter.Solar2Lunar(solar)
-    return f"{lunar.day:02d}/{lunar.month:02d}"
+def parse_ddmmyyyy(s: str) -> date:
+    return datetime.strptime(s.strip(), "%d/%m/%Y").date()
 
-# ---------- CSV IO ----------
-def load_history(path: str) -> pd.DataFrame:
-    cols = ["Vietnam Date","Lunar Date","Tidal Data","Pressure Data",
+# ==== Lunar (đơn giản hoá – nếu không có lunarcalendar vẫn chạy) ====
+def lunar_ddmm(d: date) -> str:
+    try:
+        from lunarcalendar import Converter, Solar
+        solar = Solar(d.year, d.month, d.day)
+        lunar = Converter.Solar2Lunar(solar)
+        return f"{lunar.day:02d}/{lunar.month:02d}"
+    except Exception:
+        # fallback (placeholder): cùng ngày/tháng
+        return f"{d.day:02d}/{d.month:02d}"
+
+# ==== IO CSV ====
+REQ_COLS = ["Vietnam Date","Lunar Date","Tidal Data","Pressure Data",
             "Sea Level","Water Temperature","Wind Speed","Wind Direction","Wave Height",
             "App Fishing Score","User Fishing Score","Fish Caught","User Notes","Pressure"]
+
+def load_history(path: str) -> pd.DataFrame:
     if not os.path.exists(path):
-        return pd.DataFrame(columns=cols)
-    df = pd.read_csv(path, dtype=str, keep_default_na=False, na_values=[])
-    for c in cols:
+        return pd.DataFrame(columns=REQ_COLS)
+    df = pd.read_csv(path, dtype=str, keep_default_na=False)
+    for c in REQ_COLS:
         if c not in df.columns:
             df[c] = ""
-    df = df.replace({"NaN": "", "nan": "", "NONE": "", "None": "", "NULL": "", "null": ""}).fillna("")
-    return df
+    return df.fillna("")
 
 def save_history(df: pd.DataFrame, path: str):
-    today = today_local_date()
+    df = df.copy()
     df["_d"] = df["Vietnam Date"].apply(parse_ddmmyyyy)
-    df = df[df["_d"] <= today].copy().sort_values("_d").drop(columns=["_d"])
+    df = df.sort_values("_d").drop(columns=["_d"])
     df.to_csv(path, index=False)
 
-def get_missing_dates(df: pd.DataFrame):
-    today = today_local_date()
+def missing_dates(df: pd.DataFrame):
+    today = today_local()
     if df.empty:
         start = today - timedelta(days=7)
     else:
         try:
-            maxd = df["Vietnam Date"].apply(parse_ddmmyyyy).max()
+            last = df["Vietnam Date"].apply(parse_ddmmyyyy).max()
         except Exception:
-            maxd = today - timedelta(days=7)
-        start = maxd + timedelta(days=1)
-    if start > today:
-        return []
-    cur, res = start, []
+            last = today - timedelta(days=7)
+        start = last + timedelta(days=1)
+    if start > today: return []
+    cur, out = start, []
     while cur <= today:
-        res.append(cur)
+        out.append(cur)
         cur += timedelta(days=1)
-    return res
+    return out
 
-# ---------- HTTP với fallback keys ----------
-def sg_request(path: str, params: dict):
-    last_err = None
-    for idx, key in enumerate([k for k in SG_KEYS if k], start=1):
+# ==== HTTP Stormglass (fallback nhiều key) ====
+def sg_get(path, params):
+    err = None
+    for i, key in enumerate([k for k in SG_KEYS if k]):
         try:
-            url = f"{SG_BASE}{path}"
-            r = requests.get(url, headers={"Authorization": key}, params=params, timeout=60)
+            r = requests.get(f"{SG_BASE}{path}", headers={"Authorization": key}, params=params, timeout=60)
             if 200 <= r.status_code < 300:
                 return r.json()
-            last_err = f"[Key#{idx}] HTTP {r.status_code}: {r.text[:200]}"
+            err = f"[Key#{i+1}] HTTP {r.status_code}: {r.text[:200]}"
         except Exception as e:
-            last_err = f"[Key#{idx}] {e}"
-    raise RuntimeError(f"All Stormglass keys failed. Last error: {last_err}")
+            err = f"[Key#{i+1}] {e}"
+    raise RuntimeError(err or "No Stormglass key configured")
 
-# ---------- Fetchers ----------
-def fetch_tide_extremes(start_date: date, end_date: date):
-    start_dt = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=LOCAL_TZ)
-    end_dt   = datetime.combine(end_date,   datetime.max.time()).replace(tzinfo=LOCAL_TZ)
-    data = sg_request(
-        "/tide/extremes/point",
-        {"lat": LAT, "lng": LON, "start": to_utc_iso(start_dt), "end": to_utc_iso(end_dt)}
-    )
-    return data.get("data", [])
+# ==== Fetchers ====
+def fetch_tide(start_d: date, end_d: date):
+    sdt = datetime.combine(start_d, datetime.min.time()).replace(tzinfo=LOCAL_TZ)
+    edt = datetime.combine(end_d, datetime.max.time()).replace(tzinfo=LOCAL_TZ)
+    j = sg_get("/tide/extremes/point", {"lat": LAT,"lng": LON,"start": to_utc_iso(sdt),"end": to_utc_iso(edt)})
+    return j.get("data", [])
 
-def fetch_weather_pressure(start_date: date, end_date: date):
-    start_dt = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=LOCAL_TZ)
-    end_dt   = datetime.combine(end_date,   datetime.max.time()).replace(tzinfo=LOCAL_TZ)
-    data = sg_request(
-        "/weather/point",
-        {
-            "lat": LAT, "lng": LON, "params": "pressure",
-            "start": to_utc_iso(start_dt), "end": to_utc_iso(end_dt),
-            "source": "noaa"
-        }
-    )
-    return data.get("hours", [])
+def fetch_pressure(start_d: date, end_d: date):
+    sdt = datetime.combine(start_d, datetime.min.time()).replace(tzinfo=LOCAL_TZ)
+    edt = datetime.combine(end_d, datetime.max.time()).replace(tzinfo=LOCAL_TZ)
+    j = sg_get("/weather/point", {
+        "lat": LAT, "lng": LON, "params": "pressure",
+        "source": "noaa", "start": to_utc_iso(sdt), "end": to_utc_iso(edt)
+    })
+    return j.get("hours", [])
 
-def to_local_ddmmyyyy_from_iso(iso_s: str) -> str:
-    if iso_s.endswith("Z"):
-        iso_s = iso_s[:-1] + "+00:00"
-    dt_utc = datetime.fromisoformat(iso_s)
-    return dt_utc.astimezone(LOCAL_TZ).strftime("%d/%m/%Y")
+def iso_to_local(iso):
+    if isinstance(iso, str) and iso.endswith("Z"): iso = iso[:-1] + "+00:00"
+    return datetime.fromisoformat(iso).astimezone(LOCAL_TZ).isoformat()
 
-def to_local_iso(iso_s: str) -> str:
-    if iso_s.endswith("Z"):
-        iso_s = iso_s[:-1] + "+00:00"
-    dt_utc = datetime.fromisoformat(iso_s)
-    return dt_utc.astimezone(LOCAL_TZ).isoformat()
+def iso_to_ddmmyyyy(iso):
+    if isinstance(iso, str) and iso.endswith("Z"): iso = iso[:-1] + "+00:00"
+    return datetime.fromisoformat(iso).astimezone(LOCAL_TZ).strftime("%d/%m/%Y")
 
-# ---------- Build rows từ API cho phần MISSING (ghi CSV) ----------
-def build_new_rows(missing_dates, tide_extremes, weather_hours):
-    tide_by_day = {}
-    for it in tide_extremes:
-        d = to_local_ddmmyyyy_from_iso(it["time"])
-        tide_by_day.setdefault(d, []).append({
-            "height": it.get("height"),
-            "time": to_local_iso(it["time"]),
-            "type": it.get("type")
-        })
-
-    pres_by_day = {}
-    for h in weather_hours:
-        d = to_local_ddmmyyyy_from_iso(h["time"])
-        val = h.get("pressure")
-        if isinstance(val, dict):
-            val = val.get("noaa")
-        if val is None:
-            continue
+# ==== Build rows cho phần thiếu (ghi CSV) ====
+def rows_for(miss, tides, hours):
+    tide_by = {}
+    for x in tides:
+        d = iso_to_ddmmyyyy(x["time"])
+        tide_by.setdefault(d, []).append({"time": iso_to_local(x["time"]),
+                                          "height": x.get("height"),
+                                          "type": x.get("type")})
+    pres_by = {}
+    for h in hours:
+        d = iso_to_ddmmyyyy(h["time"])
+        v = h.get("pressure")
+        if isinstance(v, dict): v = v.get("noaa")
         try:
-            fval = float(val)
-        except Exception:
-            continue
-        if math.isfinite(fval):
-            pres_by_day.setdefault(d, []).append({"time": to_local_iso(h["time"]), "pressure": fval})
+            f = float(v)
+            if math.isfinite(f):
+                pres_by.setdefault(d, []).append({"time": iso_to_local(h["time"]), "pressure": f})
+        except: pass
 
-    rows = []
-    for d in missing_dates:
-        dstr = fmt_ddmmyyyy(d)
-        rows.append({
-            "Vietnam Date": dstr,
-            "Lunar Date":   gregorian_to_lunar_ddmm(d),
-            "Tidal Data":   str(tide_by_day.get(dstr, [])),
-            "Pressure Data":str(pres_by_day.get(dstr, [])),
-            "Sea Level":"", "Water Temperature":"", "Wind Speed":"", "Wind Direction":"", "Wave Height":"",
-            "App Fishing Score":"", "User Fishing Score":"", "Fish Caught":"", "User Notes":"", "Pressure":""
+    out = []
+    for d in miss:
+        ds = ddmmyyyy(d)
+        out.append({
+            "Vietnam Date": ds,
+            "Lunar Date":   lunar_ddmm(d),
+            "Tidal Data":   str(tide_by.get(ds, [])),
+            "Pressure Data":str(pres_by.get(ds, [])),
+            "Sea Level":"","Water Temperature":"","Wind Speed":"","Wind Direction":"","Wave Height":"",
+            "App Fishing Score":"","User Fishing Score":"","Fish Caught":"","User Notes":"","Pressure":""
         })
-    if not rows:
-        return None
-    return pd.DataFrame(rows)
+    return pd.DataFrame(out) if out else None
 
-# ---------- Xuất site/data.json (lịch sử + forecast) ----------
-def export_site_json(df_history: pd.DataFrame, forecast_days: list | None = None, error_msg: str | None = None):
-    def parse_repr(s):
-        if not isinstance(s, str) or not s.strip():
-            return []
+# ==== Forecast (không ghi CSV) ====
+def build_forecast(start_d: date, end_d: date):
+    tides = fetch_tide(start_d, end_d)
+    hours = fetch_pressure(start_d, end_d)
+
+    tide_by, pres_by = {}, {}
+    for x in tides:
+        d = iso_to_ddmmyyyy(x["time"])
+        tide_by.setdefault(d, []).append({"time": iso_to_local(x["time"]),
+                                          "height": x.get("height"), "type": x.get("type")})
+    for h in hours:
+        d = iso_to_ddmmyyyy(h["time"])
+        v = h.get("pressure")
+        if isinstance(v, dict): v = v.get("noaa")
+        try:
+            f = float(v)
+            if math.isfinite(f):
+                pres_by.setdefault(d, []).append({"time": iso_to_local(h["time"]), "pressure": f})
+        except: pass
+
+    cur, out = start_d, []
+    while cur <= end_d:
+        ds = ddmmyyyy(cur)
+        out.append({
+            "vietnam_date": ds,
+            "lunar_date":   lunar_ddmm(cur),
+            "tidal_data":   tide_by.get(ds, []),
+            "pressure_data":pres_by.get(ds, []),
+            "is_forecast":  True
+        })
+        cur += timedelta(days=1)
+    return out
+
+# ==== Xuất site/data.json ====
+def export_json(df: pd.DataFrame, forecast: list):
+    def parse_list(s):
+        if not s: return []
         try: return ast.literal_eval(s)
-        except Exception: return []
+        except: return []
 
-    def clean_str(x):
-        if x is None: return ""
-        if isinstance(x, float) and (math.isnan(x) or math.isinf(x)): return ""
-        s = str(x).strip()
-        return "" if s.lower() in ("nan", "none", "na", "null") else s
+    items = []
+    for _, r in df.iterrows():
+        items.append({
+            "vietnam_date": r["Vietnam Date"],
+            "lunar_date":   r["Lunar Date"],
+            "tidal_data":   parse_list(r["Tidal Data"]),
+            "pressure_data":parse_list(r["Pressure Data"]),
+            "is_forecast":  False
+        })
 
-    def clean_num(x):
-        try:
-            if x is None: return None
-            f = float(x)
-            if not math.isfinite(f): return None
-            return round(f, 4)
-        except Exception:
-            return None
+    # sort + khử trùng lặp theo ngày
+    def key_dt(x): return parse_ddmmyyyy(x["vietnam_date"])
+    items = sorted(items, key=key_dt)
 
-    if error_msg:
-        with open(SITE_JSON, "w", encoding="utf-8") as f:
-            json.dump({"error": error_msg}, f, ensure_ascii=False, indent=2)
-        return
+    # nối forecast và đảm bảo sort tăng dần
+    all_days = items + (forecast or [])
+    all_days = sorted(all_days, key=key_dt)
 
+    payload = {
+        "meta": {
+            "generated_at": datetime.now(LOCAL_TZ).isoformat(),
+            "rows": len(all_days)
+        },
+        "days": all_days
+    }
+    with open(SITE_JSON, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+
+def main():
     try:
-        df = df_history.copy()
-        df["_d"] = df["Vietnam Date"].apply(parse_ddmmyyyy)
-        df = df[df["_d"] <= today_local_date()].sort_values("_d").drop(columns=["_d"])
-        df = df.fillna("").replace({"NaN":"","nan":"","NONE":"","None":"","NULL":"","null":""})
+        df = load_history(HISTORY_CSV)
+        miss = missing_dates(df)
+        if miss:
+            s, e = miss[0], miss[-1]
+            tides = fetch_tide(s, e)
+            hours = fetch_pressure(s, e)
+            add = rows_for(miss, tides, hours)
+            if add is not None:
+                df = pd.concat([df, add], ignore_index=True)
+                save_history(df, HISTORY_CSV)
 
-        days_out = []
-        for _, row in df.iterrows():
-            tidal_list = parse_repr(row.get("Tidal Data", ""))
-            press_list = parse_repr(row.get("Pressure Data", ""))
+        # forecast 10 ngày tới
+        s_fc = today_local() + timedelta(days=1)
+        e_fc = s_fc + timedelta(days=9)
+        forecast = build_forecast(s_fc, e_fc)
 
-            tidal_data, pressure_data = [], []
-            for item in tidal_list or []:
-                if isinstance(item, dict):
-                    tidal_data.append({
-                        "time":   clean_str(item.get("time")),
-                        "height": clean_num(item.get("height")),
-                        "type":   clean_str(item.get("type")),
-                    })
-            for item in press_list or []:
-                if isinstance(item, dict):
-                    pressure_data.append({
-                        "time":     clean_str(item.get("time")),
-                        "pressure": clean_num(item.get("pressure")),
-                    })
-
-            days_out.append({
-                "vietnam_date": clean_str(row.get("Vietnam Date")),
-                "lunar_date":   clean_str(row.get("Lunar Date")),
-                "tidal_data":   tidal_data,
-                "pressure_data":pressure_data,
-                "is_forecast":  False
-            })
-
-        payload = {
-            "meta": {
-                "generated_at": datetime.now(LOCAL_TZ).isoformat(),
-                "rows": len(days_out),
-            },
-            "days": days_out,
-        }
-
-        # —— gắn forecast (nếu có) —— 
-        if forecast_days:
-            payload["forecast"] = forecast_days
-
+        export_json(df, forecast)
+        print(f"[OK] history={len(df)} forecast={len(forecast)} → {SITE_JSON}")
+    except Exception as e:
         with open(SITE_JSON, "w", encoding="utf-8") as f:
-            json.dump(payload, f, ensure_ascii=False, indent=2, allow_nan=False)
-
-    except Exception:
-        msg = "ETL error:\n" + traceback.format_exc()
-        with open(SITE_JSON, "w", encoding="utf-8") as f:
-            json.dump({"error": msg}, f, ensure_ascii=False, indent=2)
+            json.dump({"error": f"{e}\n{traceback.format_exc()}"}, f, ensure_ascii=False, indent=2)
         raise
 
-# ---------- Build forecast (không ghi CSV) ----------
-def build_forecast_days(start_d: date, end_d: date):
-    tide = fetch_tide_extremes(start_d, end_d)
-    pres = fetch_weather_pressure(start_d, end_d)
-
-    # group by dd/MM/yyyy
-    def group_tide():
-        res = {}
-        for it in tide:
-            d = to_local_ddmmyyyy_from_iso(it["time"])
-            res.setdefault(d, []).append({
-                "time": to_local_iso(it["time"]),
-                "height": it.get("height"),
-                "type": it.get("type"),
-            })
-        return res
-
-    def group_pres():
-        res = {}
-        for h in pres:
-            d = to_local_ddmmyyyy_from_iso(h["time"])
-            val = h.get("pressure")
-            if isinstance(val, dict): val = val.get("noaa")
-            try:
-                f = float(val)
-                if math.isfinite(f):
-                    res.setdef
+if __name__ == "__main__":
+    main()
