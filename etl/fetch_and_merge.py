@@ -51,6 +51,8 @@ def load_history(path):
     for c in cols:
         if c not in df.columns:
             df[c] = ""
+    # QUAN TRỌNG: loại NaN để không ghi NaN vào JSON
+    df = df.fillna("")
     return df
 
 def save_history(df, path):
@@ -175,36 +177,80 @@ def build_new_rows(missing_dates, tide_extremes, weather_hours):
     return pd.DataFrame(rows) if rows else None
 
 def export_site_json(df, error_msg=None):
-    if error_msg:
-        # Ghi file lỗi để frontend hiển thị
-        with open(SITE_JSON, "w", encoding="utf-8") as f:
-            json.dump({"error": error_msg}, f, ensure_ascii=False, indent=2)
-        return
+    import ast, math, json
 
-    # Xuất dữ liệu đến hôm nay
-    df["_d"] = df["Vietnam Date"].apply(parse_ddmmyyyy)
-    df = df[df["_d"] <= today_local_date()].copy().sort_values("_d").drop(columns=["_d"])
-
-    import ast
     def parse_repr(s):
         try:
             return ast.literal_eval(s) if isinstance(s, str) else []
         except Exception:
             return []
 
+    def clean_str(x):
+        # Trả về chuỗi sạch (không NaN/None)
+        if x is None:
+            return ""
+        if isinstance(x, float) and (math.isnan(x) or math.isinf(x)):
+            return ""
+        s = str(x)
+        return "" if s.lower() in ("nan", "none", "na") else s
+
+    def clean_num(x):
+        # Trả về số hoặc None (để JSON ra null), không cho NaN/Inf
+        if x is None:
+            return None
+        try:
+            f = float(x)
+            if math.isnan(f) or math.isinf(f):
+                return None
+            return f
+        except Exception:
+            return None
+
+    if error_msg:
+        with open(SITE_JSON, "w", encoding="utf-8") as f:
+            json.dump({"error": error_msg}, f, ensure_ascii=False, indent=2)
+        return
+
+    # Lọc đến hôm nay
+    df["_d"] = df["Vietnam Date"].apply(parse_ddmmyyyy)
+    df = df[df["_d"] <= today_local_date()].copy().sort_values("_d").drop(columns=["_d"])
+    # Loại NaN còn sót (nếu có)
+    df = df.fillna("")
+
     out = []
     for _, r in df.iterrows():
+        tidal = parse_repr(r.get("Tidal Data",""))
+        press = parse_repr(r.get("Pressure Data",""))
+        # Dọn sạch mảng pressure để chắc chắn không có NaN
+        pressure_data = []
+        for p in press if isinstance(press, list) else []:
+            pressure_data.append({
+                "time": clean_str(p.get("time")),
+                "pressure": clean_num(p.get("pressure"))
+            })
+        # Dọn sạch mảng tide
+        tidal_data = []
+        for t in tidal if isinstance(t, list) else []:
+            tidal_data.append({
+                "time": clean_str(t.get("time")),
+                "height": clean_num(t.get("height")),
+                "type": clean_str(t.get("type"))
+            })
+
         out.append({
-            "vietnam_date": r["Vietnam Date"],
-            "lunar_date": r.get("Lunar Date",""),
-            "tidal_data": parse_repr(r.get("Tidal Data","")),
-            "pressure_data": parse_repr(r.get("Pressure Data","")),
-            "fish_caught": r.get("Fish Caught","") or "",
-            "user_score": r.get("User Fishing Score","") or "",
-            "user_notes": r.get("User Notes","") or ""
+            "vietnam_date": clean_str(r.get("Vietnam Date")),
+            "lunar_date": clean_str(r.get("Lunar Date")),
+            "tidal_data": tidal_data,
+            "pressure_data": pressure_data,
+            "fish_caught": clean_str(r.get("Fish Caught")),
+            "user_score": clean_str(r.get("User Fishing Score")),
+            "user_notes": clean_str(r.get("User Notes"))
         })
+
+    # Quan trọng: allow_nan=False để nếu còn NaN sẽ raise ngay (tránh ghi JSON lỗi)
     with open(SITE_JSON, "w", encoding="utf-8") as f:
-        json.dump({"days": out}, f, ensure_ascii=False, indent=2)
+        json.dump({"days": out}, f, ensure_ascii=False, indent=2, allow_nan=False)
+
 
 def main():
     try:
