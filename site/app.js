@@ -1,286 +1,346 @@
-/* =========================================================
- * Central Vietnam Fishing Calendar - app.js (robust login)
- * =======================================================*/
-
-/* ===== Robust login bootstrap ===== */
-(function () {
-  const USER_OK = "danang";
-  const PASS_OK = "lap-an-123";
-
-  function showApp() {
-    const login = document.getElementById("login");
-    const app = document.getElementById("app");
-    if (login) {
-      login.classList?.add?.("hidden");
-      if (getComputedStyle(login).display !== "none") login.style.display = "none";
-    }
-    if (app) {
-      app.classList?.remove?.("hidden");
-      if (getComputedStyle(app).display === "none") app.style.display = "";
-    }
+<script>
+// ====== Config màu & helpers ======
+const COLORS = {
+  weekdayBadge: {
+    0: { fg: '#8bd5ff', bg: '#4a2b20' }, // Sun (badge có nền riêng cho weekend)
+    1: { fg: '#8dd3ff', bg: '#223b4b' }, // Mon
+    2: { fg: '#9cffd5', bg: '#203b2e' }, // Tue
+    3: { fg: '#c3a6ff', bg: '#2a2742' }, // Wed
+    4: { fg: '#ffd39c', bg: '#463825' }, // Thu
+    5: { fg: '#ff9ccf', bg: '#422535' }, // Fri
+    6: { fg: '#8bd5ff', bg: '#4a2b20' }  // Sat
+  },
+  weekendHeaderBg: '#7a2b1d',      // nền rõ ràng cho Sat/Sun (header bar)
+  weekdayHeaderBg: '#223447',      // nền header chung cho Mon–Fri
+  lunarBadge: { fg: '#ffffff', bg: '#c23b3b' },
+  headerText: '#cfe8ff',
+  cyan: '#89e0ff',
+  gridBorder: '#1a1f28',
+  cardBg: '#13191f',
+  tide: '#87c7ff',
+  pressure: '#f0b08a',
+  hydro: {
+    sea: '#87e4ff',
+    watert: '#ffd479',
+    wind: '#8bffb0',
+    winddir: '#aab4ff',
+    wave: '#ffb3a1'
   }
+};
 
-  function doLogin(e) {
-    if (e) e.preventDefault?.();
-    try {
-      const u = document.getElementById("user")?.value?.trim() ?? "";
-      const p = document.getElementById("pass")?.value ?? "";
-      if (u === USER_OK && p === PASS_OK) {
-        showApp();
-        if (typeof init === "function") init();
-      } else {
-        alert("Sai thông tin!");
-      }
-    } catch (err) {
-      console.error("[login] error:", err);
-      alert("Có lỗi JS. Mở F12 → Console để xem chi tiết.");
-    }
-  }
+const MEANS = {
+  sea_level: 0.74,
+  water_temp: 27.16,
+  wind_speed: 3.48,
+  wave_height: 1.11
+};
 
-  // Fallback global (phòng trường hợp HTML đang dùng onclick="loginClick()")
-  window.loginClick = doLogin;
+const dpr = Math.max(1, window.devicePixelRatio || 1);
 
-  function wire() {
-    const loginPanel = document.getElementById("login");
-    if (!loginPanel) {
-      console.warn("[login] #login not found — tự vào app để tránh kẹt.");
-      showApp();
-      if (typeof init === "function") init();
-      return;
-    }
-
-    // 1) Nút bấm theo ID quen thuộc
-    const btn = document.getElementById("btnLogin");
-    if (btn) btn.addEventListener("click", doLogin);
-
-    // 2) Hoặc bất kỳ button trong #login
-    const anyBtn = loginPanel.querySelector("button:not([type]) , button[type='button'] , button[type='submit']");
-    if (anyBtn && anyBtn !== btn) anyBtn.addEventListener("click", doLogin);
-
-    // 3) Nếu có form → submit (Enter key)
-    const form = loginPanel.closest("form") || loginPanel.querySelector("form");
-    if (form) form.addEventListener("submit", doLogin);
-
-    // 4) Dev bypass: thêm #dev vào URL để vào thẳng (không cần login)
-    if (location.hash === "#dev") {
-      console.warn("[login] dev bypass enabled via #dev");
-      showApp();
-      if (typeof init === "function") init();
-    }
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", wire);
-  } else {
-    wire();
-  }
-})();
-
-/* ===== Paging & globals ===== */
-const PAGE_SIZE = 10; // 2 cột x 5 hàng
-let ALL = [];
-let page = 0;
-const charts = new Map();
-
-/* ===== Utils ===== */
-function wdShort(dstr) {
-  const [dd, MM, yyyy] = dstr.split("/").map(Number);
-  const d = new Date(yyyy, MM - 1, dd);
-  return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()];
+function parseVNDate(ddmmyyyy) {
+  const [d,m,y] = ddmmyyyy.split('/').map(Number);
+  return new Date(y, m - 1, d);
 }
-function toHM(iso) {
-  const d = new Date(iso);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+function fmtNum(x, unit='') {
+  if (x === null || x === undefined || Number.isNaN(x)) return '—';
+  return (Math.round(x * 100) / 100) + unit;
 }
-const num = (v) => (Number.isFinite(+v) ? +v : null);
+function isForecastDay(vnDate) {
+  const d = parseVNDate(vnDate);
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  return d.getTime() >= today.getTime(); // hôm nay trở đi là forecast label
+}
 
-/* ===== Init (sau login) ===== */
+// ====== Auth (đơn giản, như trước) ======
+function ensureAuth() {
+  const token = sessionStorage.getItem('fj_auth');
+  if (token === 'ok') {
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    return true;
+  }
+  document.getElementById('login').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  return false;
+}
+function bindLogin() {
+  const f = document.getElementById('login-form');
+  if (!f) return;
+  f.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const u = (document.getElementById('username').value || '').trim();
+    const p = (document.getElementById('password').value || '').trim();
+    // Bạn đang dùng user/pass tùy ý local – hợp lệ khi cả hai đều không rỗng
+    if (u && p) {
+      sessionStorage.setItem('fj_auth','ok');
+      ensureAuth();
+      init(); // render ngay
+    } else {
+      alert('Please enter username & password');
+    }
+  });
+}
+
+// ====== Canvas utils (chống nhòe) ======
+function prepHiDPICanvas(canvas, cssW, cssH) {
+  // set attribute (pixel) khớp DPR, set style (CSS) đúng kích thước mong muốn
+  canvas.width  = Math.floor(cssW * dpr);
+  canvas.height = Math.floor(cssH * dpr);
+  canvas.style.width  = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // scale ngược để vẽ theo toạ độ CSS
+  ctx.clearRect(0,0,cssW,cssH);
+  ctx.imageSmoothingEnabled = true;
+  return ctx;
+}
+
+// ====== Vẽ đồ thị đơn giản ======
+function drawLineChart(canvas, series, {height=150, color='#fff', axisColor='#7aa2f7', minY=null, maxY=null}) {
+  const w = canvas.clientWidth || canvas.parentElement.clientWidth || 300;
+  const ctx = prepHiDPICanvas(canvas, w, height);
+
+  // padding
+  const padL = 30, padR = 10, padT = 8, padB = 22;
+  const plotW = w - padL - padR;
+  const plotH = height - padT - padB;
+
+  // trục
+  ctx.strokeStyle = COLORS.gridBorder;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(padL, padT, plotW, plotH);
+
+  if (!series || series.length === 0) return;
+
+  const xs = series.map(p => p.x);
+  const ys = series.map(p => p.y);
+
+  const xMin = Math.min(...xs), xMax = Math.max(...xs);
+  let yMin = (minY==null) ? Math.min(...ys) : minY;
+  let yMax = (maxY==null) ? Math.max(...ys) : maxY;
+  if (yMin === yMax) { yMin -= 1; yMax += 1; }
+
+  // Trục X nhãn giờ
+  ctx.fillStyle = axisColor;
+  ctx.font = '11px ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto';
+  ctx.textBaseline = 'top';
+  const hours = [0,3,6,9,12,15,18,21,24];
+  hours.forEach(h=>{
+    const x = padL + ((h - xMin) / (xMax - xMin)) * plotW;
+    ctx.fillText((h%24).toString().padStart(2,'0') + ':00', x-14, height-18);
+  });
+
+  // Vẽ line
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  series.forEach((p,i)=>{
+    const x = padL + ((p.x - xMin) / (xMax - xMin)) * plotW;
+    const y = padT + (1 - (p.y - yMin) / (yMax - yMin)) * plotH;
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+}
+
+// ====== Render 1 cell ======
+function weekdayBadgeEl(date, vnDate, lunarDDMM) {
+  const wd = date.getDay(); // 0..6
+  const scheme = COLORS.weekdayBadge[wd];
+  const el = document.createElement('div');
+  el.className = 'cell-header';
+  el.style.background = (wd===0||wd===6) ? COLORS.weekendHeaderBg : COLORS.weekdayHeaderBg;
+
+  const left = document.createElement('div');
+  left.className = 'left';
+
+  const wSpan = document.createElement('span');
+  wSpan.className = 'weekday';
+  wSpan.textContent = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][wd];
+  wSpan.style.color = scheme.fg;
+  wSpan.style.background = scheme.bg;
+
+  const gDate = document.createElement('span');
+  gDate.className = 'gdate';
+  gDate.textContent = vnDate;
+  gDate.style.color = COLORS.cyan;
+
+  const lBadge = document.createElement('span');
+  lBadge.className = 'lunar';
+  lBadge.textContent = lunarDDMM;
+  lBadge.style.color = COLORS.lunarBadge.fg;
+  lBadge.style.background = COLORS.lunarBadge.bg;
+
+  left.appendChild(wSpan);
+  left.appendChild(gDate);
+  left.appendChild(lBadge);
+
+  const right = document.createElement('div');
+  right.className = 'right';
+
+  if (isForecastDay(vnDate)) {
+    const f = document.createElement('span');
+    f.className = 'forecast';
+    f.textContent = 'Forecast';
+    right.appendChild(f);
+  }
+
+  el.appendChild(left);
+  el.appendChild(right);
+  return el;
+}
+
+function renderCell(day) {
+  const vnDate = day.vietnam_date;
+  const date = parseVNDate(vnDate);
+  const lunar = day.lunar_date;
+
+  const card = document.createElement('div');
+  card.className = 'cell';
+
+  // Header
+  card.appendChild(weekdayBadgeEl(date, vnDate, lunar));
+
+  // Chart area
+  const wrap = document.createElement('div');
+  wrap.className = 'charts';
+
+  // Tide (chuyển time → giờ, height)
+  const tide = (day.tidal_data||[]).map(t=>{
+    const hh = new Date(t.time).getHours();
+    return {x: hh, y: Number(t.height)};
+  });
+  const tideCanvas = document.createElement('canvas');
+  tideCanvas.className = 'chart';
+  wrap.appendChild(tideCanvas);
+  drawLineChart(tideCanvas, tide, {height: 150, color: COLORS.tide, axisColor:'#88ddff'});
+
+  // Pressure (time → giờ, pressure hPa)
+  const pres = (day.pressure_data||[]).map(p=>{
+    const hh = new Date(p.time).getHours();
+    return {x: hh, y: Number(p.pressure)};
+  });
+  const presCanvas = document.createElement('canvas');
+  presCanvas.className = 'chart small';
+  wrap.appendChild(presCanvas);
+  drawLineChart(presCanvas, pres, {height: 120, color: COLORS.pressure, axisColor:'#ffccaa'});
+
+  // Hydro text
+  const sea = Number(day.sea_level ?? 0) || 0;
+  const wtemp = Number(day.water_temperature ?? 0) || 0;
+  const wspd = Number(day.wind_speed ?? 0) || 0;
+  const wdir = Number(day.wind_direction ?? 0) || 0;
+  const wave = Number(day.wave_height ?? 0) || 0;
+
+  const hydro = document.createElement('div');
+  hydro.className = 'hydro';
+  hydro.innerHTML =
+    `<span style="color:${COLORS.hydro.sea}">Sea Level: ${fmtNum(sea,'m')} # ${MEANS.sea_level}m</span>
+     <span style="color:${COLORS.hydro.watert}">Water Temp: ${fmtNum(wtemp,'°C')} # ${MEANS.water_temp}°C</span>
+     <span style="color:${COLORS.hydro.wind}">Wind Speed: ${fmtNum(wspd,' m/s')} # ${MEANS.wind_speed} m/s</span>
+     <span style="color:${COLORS.hydro.winddir}">Wind Dir: ${fmtNum(wdir,'°')}</span>
+     <span style="color:${COLORS.hydro.wave}">Wave: ${fmtNum(wave,'m')} # ${MEANS.wave_height}m</span>`;
+
+  card.appendChild(wrap);
+  card.appendChild(hydro);
+  return card;
+}
+
+// ====== Dedupe & phân trang ======
+function dedupeDays(days) {
+  // Nếu data.json (lịch sử build cũ) có ngày trùng nhau → giữ 1 bản
+  const map = new Map();
+  for (const d of days) {
+    const key = d.vietnam_date;
+    if (!map.has(key)) map.set(key, d);
+    else {
+      // ưu tiên record có nhiều điểm hơn
+      const a = map.get(key);
+      const scoreA = (a.tidal_data?.length||0) + (a.pressure_data?.length||0);
+      const scoreB = (d.tidal_data?.length||0) + (d.pressure_data?.length||0);
+      if (scoreB > scoreA) map.set(key, d);
+    }
+  }
+  return Array.from(map.values()).sort((a,b)=>{
+    return parseVNDate(a.vietnam_date) - parseVNDate(b.vietnam_date);
+  });
+}
+
+function paginate(days, page, pageSize=10) {
+  const total = days.length;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const p = Math.min(Math.max(1, page), pages);
+  const start = (p-1)*pageSize;
+  return {
+    page: p,
+    pages,
+    total,
+    slice: days.slice(start, start+pageSize)
+  };
+}
+
+// ====== Render chính ======
 async function init() {
-  const grid = document.getElementById("grid");
-  const pageInfo = document.getElementById("pageInfo");
-  try {
-    const r = await fetch("./data.json", { cache: "no-store" });
-    const j = await r.json();
+  if (!ensureAuth()) return;
 
-    if (j?.error) {
-      grid.innerHTML = `<div class="card"><pre>${j.error}</pre></div>`;
-      pageInfo.textContent = "";
-      return;
-    }
-
-    // ETL đã khử trùng lặp ngày; days = lịch sử (≤ hôm qua) + forecast (từ hôm nay)
-    ALL = Array.isArray(j?.days) ? j.days : [];
-    page = Math.max(0, Math.ceil(ALL.length / PAGE_SIZE) - 1);
-
-    document.getElementById("prev").onclick = () => {
-      page = Math.max(0, page - 1);
-      render();
-    };
-    document.getElementById("next").onclick = () => {
-      const last = Math.max(0, Math.ceil(ALL.length / PAGE_SIZE) - 1);
-      page = Math.min(last, page + 1);
-      render();
-    };
-
-    render();
-    window.addEventListener("resize", () => render());
-  } catch (e) {
-    console.error(e);
-    grid.innerHTML = `<div class="card"><pre>${String(e)}</pre></div>`;
+  const res = await fetch('./data.json', {cache:'no-store'});
+  const payload = await res.json();
+  if (payload.error) {
+    document.getElementById('grid').innerHTML =
+      `<pre class="error">${payload.error}</pre>`;
+    return;
   }
+
+  // map lại structure nếu trường tên khác
+  const daysRaw = (payload.days || payload) // nếu để thẳng là mảng
+    .map(d => ({
+      vietnam_date: d.vietnam_date || d['Vietnam Date'],
+      lunar_date:   d.lunar_date   || d['Lunar Date'],
+      tidal_data:   d.tidal_data   || d['Tidal Data'] || [],
+      pressure_data:d.pressure_data|| d['Pressure Data'] || [],
+      sea_level:    d.sea_level    || d['Sea Level'] || 0,
+      water_temperature: d.water_temperature || d['Water Temperature'] || 0,
+      wind_speed:   d.wind_speed   || d['Wind Speed'] || 0,
+      wind_direction:d.wind_direction|| d['Wind Direction'] || 0,
+      wave_height:  d.wave_height  || d['Wave Height'] || 0
+    }));
+
+  const days = dedupeDays(daysRaw);
+
+  // điều hướng đơn giản bằng hash ?page=
+  const params = new URLSearchParams(location.search);
+  let page = Number(params.get('page') || '1');
+
+  const nav = document.getElementById('nav');
+  function renderPage(p) {
+    const {page:cur, pages, total, slice} = paginate(days, p, 10);
+    page = cur;
+
+    // header nav
+    nav.querySelector('.counter').textContent = `Trang ${cur} / ${pages} • Tổng ngày: ${total}`;
+    const btnPrev = nav.querySelector('.prev');
+    const btnNext = nav.querySelector('.next');
+    btnPrev.disabled = cur<=1;
+    btnNext.disabled = cur>=pages;
+    btnPrev.onclick = ()=>{ renderPage(cur-1); };
+    btnNext.onclick = ()=>{ renderPage(cur+1); };
+
+    // grid
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    slice.forEach(d => grid.appendChild(renderCell(d)));
+
+    // scroll to top mỗi lần đổi trang
+    window.scrollTo({top:0, behavior:'instant'});
+    history.replaceState(null,'',`?page=${cur}`);
+  }
+
+  renderPage(page);
 }
 
-/* ===== Render page ===== */
-function render() {
-  const grid = document.getElementById("grid");
-  const pageInfo = document.getElementById("pageInfo");
-  const last = Math.max(0, Math.ceil(ALL.length / PAGE_SIZE) - 1);
-  const start = page * PAGE_SIZE;
-  const slice = ALL.slice(start, start + PAGE_SIZE);
-
-  // destroy old charts
-  charts.forEach((c) => {
-    try {
-      c.destroy();
-    } catch {}
-  });
-  charts.clear();
-
-  grid.innerHTML = "";
-  pageInfo.textContent = `Trang ${page + 1} / ${last + 1} • Tổng ngày: ${ALL.length}`;
-
-  slice.forEach((d) => {
-    const card = document.createElement("div");
-    card.className = "card";
-
-    const wd = wdShort(d.vietnam_date);
-    const title = document.createElement("div");
-    title.className = `title day-${wd.toLowerCase()} ${
-      /Sun|Sat/.test(wd) ? "is-weekend" : "is-weekday"
-    }`;
-    title.innerHTML = `
-      <span class="wd">${wd}</span>
-      <span class="greg">${d.vietnam_date}</span>
-      <span class="lunar">${d.lunar_date}</span>
-      ${d.is_forecast ? '<span class="forecast-tag">Forecast</span>' : ""}
-    `;
-    card.appendChild(title);
-
-    // --- TIDE chart ---
-    const wrap1 = document.createElement("div");
-    wrap1.className = "canvas-wrap";
-    const cv1 = document.createElement("canvas");
-    wrap1.appendChild(cv1);
-    card.appendChild(wrap1);
-
-    const tdata = Array.isArray(d.tidal_data) ? d.tidal_data : d["Tidal Data"] || [];
-    const tidePts = (tdata || [])
-      .map((x) => ({ x: new Date(x.time), y: num(x.height), _type: x.type }))
-      .filter((p) => p.y !== null)
-      .sort((a, b) => a.x - b.x);
-
-    const tideChart = new Chart(cv1.getContext("2d"), {
-      type: "line",
-      data: { datasets: [{ data: tidePts, borderWidth: 2, pointRadius: 2, tension: 0.3 }] },
-      options: {
-        animation: false,
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: { type: "time", time: { unit: "hour" }, ticks: { color: "#9cdcfe" } },
-          y: {
-            ticks: { color: "#ce9178" },
-            suggestedMin: (() => {
-              const ys = tidePts.map((p) => p.y);
-              if (!ys.length) return 0;
-              const mn = Math.min(...ys), mx = Math.max(...ys);
-              const span = Math.max(1, mx - mn); // tối thiểu 1m
-              return (mn + mx) / 2 - span / 2;
-            })(),
-            suggestedMax: (() => {
-              const ys = tidePts.map((p) => p.y);
-              if (!ys.length) return 1;
-              const mn = Math.min(...ys), mx = Math.max(...ys);
-              const span = Math.max(1, mx - mn);
-              return (mn + mx) / 2 + span / 2;
-            })(),
-          },
-        },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              title: (items) => (items.length ? toHM(items[0].raw.x) : ""),
-              label: (ctx) => {
-                const t = ctx.raw?._type ? ctx.raw._type + " • " : "";
-                return `${t}${(ctx.parsed.y ?? 0).toFixed(2)} m`;
-              },
-            },
-          },
-        },
-      },
-    });
-    charts.set(d.vietnam_date + "_tide", tideChart);
-
-    // --- PRESSURE chart ---
-    const wrap2 = document.createElement("div");
-    wrap2.className = "canvas-wrap";
-    const cv2 = document.createElement("canvas");
-    wrap2.appendChild(cv2);
-    card.appendChild(wrap2);
-
-    const pdata = Array.isArray(d.pressure_data) ? d.pressure_data : d["Pressure Data"] || [];
-    const presPts = (pdata || [])
-      .map((x) => ({ x: new Date(x.time), y: num(x.pressure) }))
-      .filter((p) => p.y !== null)
-      .sort((a, b) => a.x - b.x);
-
-    const presChart = new Chart(cv2.getContext("2d"), {
-      type: "line",
-      data: { datasets: [{ data: presPts, borderWidth: 2, pointRadius: 0, tension: 0.2 }] },
-      options: {
-        animation: false,
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: { type: "time", time: { unit: "hour" }, ticks: { color: "#9cdcfe" } },
-          y: {
-            ticks: { color: "#ce9178" },
-            suggestedMin: (() => {
-              const ys = presPts.map((p) => p.y);
-              if (!ys.length) return 1000;
-              const mn = Math.min(...ys), mx = Math.max(...ys);
-              const span = Math.max(3, mx - mn); // tối thiểu 3 hPa
-              return (mn + mx) / 2 - span / 2;
-            })(),
-            suggestedMax: (() => {
-              const ys = presPts.map((p) => p.y);
-              if (!ys.length) return 1010;
-              const mn = Math.min(...ys), mx = Math.max(...ys);
-              const span = Math.max(3, mx - mn);
-              return (mn + mx) / 2 + span / 2;
-            })(),
-          },
-        },
-        plugins: { legend: { display: false } },
-      },
-    });
-    charts.set(d.vietnam_date + "_press", presChart);
-
-    // --- Hydrology line ---
-    const mean = { sea_level: 0.74, water_temperature: 27.16, wind_speed: 3.48, wave_height: 1.11 };
-    const hydro = document.createElement("div");
-    hydro.className = "hydro";
-    const sl = d.sea_level, wt = d.water_temperature, ws = d.wind_speed, wd = d.wind_direction, wh = d.wave_height;
-    hydro.innerHTML = `
-      <span class="sea">Sea Level: ${isFinite(sl) ? sl.toFixed(2) + "m" : "—"} <span class="mean"># ${mean.sea_level.toFixed(2)}m</span></span>
-      <span class="temp">Water Temp: ${isFinite(wt) ? wt.toFixed(2) + "°C" : "—"} <span class="mean"># ${mean.water_temperature.toFixed(2)}°C</span></span>
-      <span class="ws">Wind Speed: ${isFinite(ws) ? ws.toFixed(2) + " m/s" : "—"} <span class="mean"># ${mean.wind_speed.toFixed(2)} m/s</span></span>
-      <span class="wd">Wind Dir: ${isFinite(wd) ? wd.toFixed(0) + "°" : "—"}</span>
-      <span class="wave">Wave: ${isFinite(wh) ? wh.toFixed(2) + "m" : "—"} <span class="mean"># ${mean.wave_height.toFixed(2)}m</span></span>
-    `;
-    card.appendChild(hydro);
-
-    grid.appendChild(card);
-  });
-}
+// ====== Khởi chạy ======
+document.addEventListener('DOMContentLoaded', () => {
+  bindLogin();
+  ensureAuth() && init();
+});
+</script>
