@@ -180,23 +180,23 @@ def export_site_json(df, error_msg=None):
     import ast, math, json
 
     def parse_repr(s):
+        if not isinstance(s, str) or not s.strip():
+            return []
         try:
-            return ast.literal_eval(s) if isinstance(s, str) else []
+            return ast.literal_eval(s)
         except Exception:
             return []
 
     def clean_str(x):
-        # Trả về chuỗi sạch (không NaN/None)
         if x is None:
             return ""
         if isinstance(x, float) and (math.isnan(x) or math.isinf(x)):
             return ""
-        s = str(x)
-        return "" if s.lower() in ("nan", "none", "na") else s
+        s = str(x).strip()
+        return "" if s.lower() in ("nan", "none", "na", "null") else s
 
     def clean_num(x):
-        # Trả về số hoặc None (để JSON ra null), không cho NaN/Inf
-        if x is None:
+        if x is None or x == "":
             return None
         try:
             f = float(x)
@@ -206,51 +206,67 @@ def export_site_json(df, error_msg=None):
         except Exception:
             return None
 
+    # Nếu được truyền error_msg từ chỗ khác
     if error_msg:
         with open(SITE_JSON, "w", encoding="utf-8") as f:
             json.dump({"error": error_msg}, f, ensure_ascii=False, indent=2)
         return
 
-    # Lọc đến hôm nay
-    df["_d"] = df["Vietnam Date"].apply(parse_ddmmyyyy)
-    df = df[df["_d"] <= today_local_date()].copy().sort_values("_d").drop(columns=["_d"])
-    # Loại NaN còn sót (nếu có)
-    df = df.fillna("")
+    try:
+        # Giới hạn đến hôm nay (không ghi tương lai)
+        df = df.copy()
+        df["_d"] = df["Vietnam Date"].apply(parse_ddmmyyyy)
+        df = df[df["_d"] <= today_local_date()].sort_values("_d").drop(columns=["_d"])
+        df = df.fillna("")
 
-    out = []
-    for _, r in df.iterrows():
-        tidal = parse_repr(r.get("Tidal Data",""))
-        press = parse_repr(r.get("Pressure Data",""))
-        # Dọn sạch mảng pressure để chắc chắn không có NaN
-        pressure_data = []
-        for p in press if isinstance(press, list) else []:
-            pressure_data.append({
-                "time": clean_str(p.get("time")),
-                "pressure": clean_num(p.get("pressure"))
+        days_out = []
+        for _, row in df.iterrows():
+            # Parse 2 cột list (an toàn, không lỗi thì trả list, lỗi trả [])
+            tidal_list = parse_repr(row.get("Tidal Data", ""))
+            press_list = parse_repr(row.get("Pressure Data", ""))
+
+            # Dọn từng phần tử (KHÔNG dùng biến vòng lặp ra ngoài)
+            tidal_data = []
+            if isinstance(tidal_list, list):
+                for item in tidal_list:
+                    if not isinstance(item, dict):
+                        continue
+                    tidal_data.append({
+                        "time":   clean_str(item.get("time")),
+                        "height": clean_num(item.get("height")),
+                        "type":   clean_str(item.get("type")),
+                    })
+
+            pressure_data = []
+            if isinstance(press_list, list):
+                for item in press_list:
+                    if not isinstance(item, dict):
+                        continue
+                    pressure_data.append({
+                        "time":     clean_str(item.get("time")),
+                        "pressure": clean_num(item.get("pressure")),
+                    })
+
+            days_out.append({
+                "vietnam_date": clean_str(row.get("Vietnam Date")),
+                "lunar_date":   clean_str(row.get("Lunar Date")),
+                "tidal_data":   tidal_data,
+                "pressure_data":pressure_data,
+                "fish_caught":  clean_str(row.get("Fish Caught")),
+                "user_score":   clean_str(row.get("User Fishing Score")),
+                "user_notes":   clean_str(row.get("User Notes")),
             })
-        # Dọn sạch mảng tide
-        tidal_data = []
-        for t in tidal if isinstance(t, list) else []:
-            tidal_data.append({
-                "time": clean_str(t.get("time")),
-                "height": clean_num(t.get("height")),
-                "type": clean_str(t.get("type"))
-            })
 
-        out.append({
-            "vietnam_date": clean_str(r.get("Vietnam Date")),
-            "lunar_date": clean_str(r.get("Lunar Date")),
-            "tidal_data": tidal_data,
-            "pressure_data": pressure_data,
-            "fish_caught": clean_str(r.get("Fish Caught")),
-            "user_score": clean_str(r.get("User Fishing Score")),
-            "user_notes": clean_str(r.get("User Notes"))
-        })
+        # Ghi JSON (không cho phép NaN)
+        with open(SITE_JSON, "w", encoding="utf-8") as f:
+            json.dump({"days": days_out}, f, ensure_ascii=False, indent=2, allow_nan=False)
 
-    # Quan trọng: allow_nan=False để nếu còn NaN sẽ raise ngay (tránh ghi JSON lỗi)
-    with open(SITE_JSON, "w", encoding="utf-8") as f:
-        json.dump({"days": out}, f, ensure_ascii=False, indent=2, allow_nan=False)
-
+    except Exception as e:
+        # Nếu lỗi, ghi ra data.json để web đọc được thông báo
+        with open(SITE_JSON, "w", encoding="utf-8") as f:
+            json.dump({"error": f"ETL error: {e}"}, f, ensure_ascii=False, indent=2)
+        # Re-raise để có log trong Actions
+        raise
 
 def main():
     try:
