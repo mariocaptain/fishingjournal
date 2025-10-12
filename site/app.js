@@ -1,4 +1,4 @@
-// ===== Login hard-code (đổi tùy ý) =====
+// ===== Login hard-code =====
 const VALID_USER = "danang";
 const VALID_PASS = "lap-an-123";
 
@@ -31,7 +31,6 @@ function fmtDisplay(d) {
   return `${weekdayVi(d)} • ${dd}/${mm}/${yyyy}`;
 }
 function localHourDecimal(iso) {
-  // iso có dạng "...+07:00" → Date, trả về giờ thập phân 0..24
   const t = new Date(iso);
   return t.getHours() + t.getMinutes()/60;
 }
@@ -44,6 +43,21 @@ const PAGE_SIZE = 4;
 async function init() {
   const resp = await fetch("./data.json", {cache:"no-store"});
   const json = await resp.json();
+
+  // Nếu cron/ETL lỗi → hiển thị banner lỗi
+  if (json.error) {
+    const grid = document.getElementById("grid");
+    document.getElementById("pageInfo").textContent = "";
+    grid.innerHTML = `
+      <div class="card" style="border-left:6px solid #d33;">
+        <h3 style="margin:0">Có lỗi khi cập nhật dữ liệu</h3>
+        <div class="meta">${json.error}</div>
+        <div class="meta">Thường là do vượt quota API. Hệ thống sẽ tự thử lại với key dự phòng vào lần chạy kế tiếp.</div>
+      </div>
+    `;
+    return;
+  }
+
   data = json.days || [];
   render();
   document.getElementById("prev").onclick = () => { page=Math.max(0,page-1); render(); };
@@ -65,12 +79,10 @@ function render() {
     const card = document.createElement("div");
     card.className = "card";
 
-    // Header ngày + thứ
     const h = document.createElement("h3");
     h.textContent = fmtDisplay(d) + (it.lunar_date ? ` • ÂL ${it.lunar_date}` : "");
     card.appendChild(h);
 
-    // Meta người dùng
     const meta = document.createElement("div");
     meta.className = "meta";
     const score = it.user_score ? `Score: ${it.user_score}` : "Score: -";
@@ -78,7 +90,6 @@ function render() {
     meta.textContent = `${score} • ${fish}`;
     card.appendChild(meta);
 
-    // Canvas biểu đồ thủy triều (x = giờ 0..24 để khỏi cần adapter thời gian)
     const canvas = document.createElement("canvas");
     canvas.height = 140;
     card.appendChild(canvas);
@@ -112,7 +123,6 @@ function render() {
       }
     });
 
-    // Áp suất: in chuỗi HH:mm → value
     const presBox = document.createElement("div");
     presBox.className = "pressure";
     const lines = (it.pressure_data || [])
@@ -127,6 +137,6 @@ function render() {
     presBox.textContent = lines.length ? lines.join("\n") : "(không có dữ liệu áp suất)";
     card.appendChild(presBox);
 
-    grid.appendChild(card);
+    document.getElementById("grid").appendChild(card);
   }
 }
