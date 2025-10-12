@@ -12,16 +12,39 @@
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial}
 
-header{display:flex;align-items:center;justify-content:space-between;
-  padding:8px 12px;background:#0b3d91;color:#fff}
+header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 10px 14px;
+  background:#0b3d91;
+  color:#fff;
+  width: 100vw;                    /* ✅ trải hết chiều ngang màn hình */
+  box-sizing: border-box;
+}
+
 header h1{margin:0;font-size:20px;font-weight:600}
 header .tools{display:flex;gap:6px;align-items:center}
 header button{background:#1f6feb;border:1px solid #2657a8;color:#fff;padding:5px 9px;border-radius:8px;cursor:pointer}
 header button:hover{filter:brightness(1.08)}
 
-#login{max-width:360px;margin:12vh auto;background:var(--panel);
-  border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:0 6px 20px rgba(0,0,0,.45)}
-#login .title{text-align:center;margin:0 0 8px 0}
+#login {
+  max-width: 320px;
+  margin: 12vh auto;
+  background:#fff;
+  padding: 20px 16px;
+  border-radius:12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+  text-align: center;               /* ✅ căn giữa toàn khung */
+}
+#login .title {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;               /* ✅ căn giữa riêng tiêu đề */
+}
+
 #login input{display:block;width:80%;max-width:280px;margin:8px auto;padding:8px;background:#0f1418;color:var(--text);border:1px solid #29323a;border-radius:8px}
 #login button{display:block;width:80%;max-width:280px;margin:8px auto;padding:8px;border-radius:8px;background:#1f6feb;border:1px solid #2657a8;color:#fff;cursor:pointer}
 .hidden{display:none}
