@@ -23,7 +23,7 @@ function parseDateSmart(s) {
   if (s.includes("-")) { const [y,m,d] = s.split("-").map(Number); return new Date(y, (m||1)-1, d||1); }
   return new Date(s);
 }
-function weekdayVi(d) { return ["CN","Th 2","Th 3","Th 4","Th 5","Th 6","Th 7"][d.getDay()]; }
+function weekdayVi(d) { return ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][d.getDay()]; }
 function fmtDisplay(d) {
   const dd=String(d.getDate()).padStart(2,"0"), mm=String(d.getMonth()+1).padStart(2,"0"), yyyy=d.getFullYear();
   return `${weekdayVi(d)} • ${dd}/${mm}/${yyyy}`;
@@ -144,7 +144,7 @@ function render() {
     card.className = "card";
 
     const h = document.createElement("h3");
-    h.textContent = fmtDisplay(d) + (it.lunar_date ? ` • ÂL ${it.lunar_date}` : "");
+    h.textContent = fmtDisplay(d) + (it.lunar_date ? ` • Âm Lịch: ${it.lunar_date}` : "");
     card.appendChild(h);
 
     // Meta + nút Edit
