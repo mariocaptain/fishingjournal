@@ -8,7 +8,7 @@ import requests
 # ===== Config =====
 LAT, LON = 16.3500, 107.9000
 LOCAL_TZ = tz.gettz("Asia/Ho_Chi_Minh")
-ROOT = os.path.abspath(os.path.dirname(__file__))
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))  # trỏ lên root repo
 DATA_DIR = os.path.join(ROOT, "data")
 SITE_DIR = os.path.join(ROOT, "site")
 os.makedirs(DATA_DIR, exist_ok=True); os.makedirs(SITE_DIR, exist_ok=True)
