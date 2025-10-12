@@ -228,7 +228,48 @@ function render() {
       })
       .filter((p) => p.y !== null)
       .sort((a, b) => a.x - b.x);
-    drawLine(cv1, tidePts, { stroke: "#79c0ff" });
+	// ----- Chart thủy triều (Chart.js) -----
+	const tideCtx = cv1.getContext("2d");
+	new Chart(tideCtx, {
+	  type: "line",
+	  data: {
+		datasets: [
+		  {
+			label: "Tide (m)",
+			data: tidePts.map(p => ({ x: p.x.getHours() + p.x.getMinutes()/60, y: p.y })),
+			parsing: false,
+			borderColor: "#79c0ff",
+			borderWidth: 2,
+			pointRadius: 3,
+			tension: 0.3,
+		  },
+		],
+	  },
+	  options: {
+		animation: false,
+		responsive: false,
+		maintainAspectRatio: false,
+		scales: {
+		  x: {
+			type: "linear",
+			min: 0,
+			max: 24,
+			ticks: {
+			  stepSize: 3,
+			  callback: (v) => `${v}:00`,
+			  color: "#9cdcfe",
+			},
+			grid: { color: "#1b2229" },
+		  },
+		  y: {
+			beginAtZero: false,
+			ticks: { color: "#ce9178" },
+			grid: { color: "#1b2229" },
+		  },
+		},
+		plugins: { legend: { display: false } },
+	  },
+	});
 
     // PRESSURE chart
     const wrap2 = document.createElement("div");
@@ -248,7 +289,48 @@ function render() {
       })
       .filter((p) => p.y !== null)
       .sort((a, b) => a.x - b.x);
-    drawLine(cv2, presPts, { stroke: "#d2a8ff" });
+	// ----- Chart áp suất (Chart.js) -----
+	const presCtx = cv2.getContext("2d");
+	new Chart(presCtx, {
+	  type: "line",
+	  data: {
+		datasets: [
+		  {
+			label: "Pressure (hPa)",
+			data: presPts.map(p => ({ x: p.x.getHours() + p.x.getMinutes()/60, y: p.y })),
+			parsing: false,
+			borderColor: "#d2a8ff",
+			borderWidth: 2,
+			pointRadius: 2,
+			tension: 0.3,
+		  },
+		],
+	  },
+	  options: {
+		animation: false,
+		responsive: false,
+		maintainAspectRatio: false,
+		scales: {
+		  x: {
+			type: "linear",
+			min: 0,
+			max: 24,
+			ticks: {
+			  stepSize: 3,
+			  callback: (v) => `${v}:00`,
+			  color: "#9cdcfe",
+			},
+			grid: { color: "#1b2229" },
+		  },
+		  y: {
+			beginAtZero: false,
+			ticks: { color: "#ce9178" },
+			grid: { color: "#1b2229" },
+		  },
+		},
+		plugins: { legend: { display: false } },
+	  },
+	});
 
     // HYDRO info line (giá trị ngày + trung bình nhiều năm — hardcode)
     const hydro = document.createElement("div");
