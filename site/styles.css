@@ -2,58 +2,42 @@
   --bg:#0c0f11; --bg-soft:#12161a; --panel:#11161a;
   --text:#d0d0d0; --muted:#9aa0a6; --border:#2a2f36; --accent:#00cc66;
   --cyan:#9cdcfe; --yaxis:#ce9178;
-  --weekend-bg:#7a2f16;      /* weekend nổi rõ */
-  --weekday-bg:#142332;      /* Mon–Fri có nền riêng, dễ thấy */
+  --weekend-bg:#7a2f16;      /* weekend rõ */
+  --weekday-bg:#142332;      /* Mon–Fri nền riêng */
   --hydro-sea:#79c0ff; --hydro-temp:#ffd166; --hydro-ws:#90ee90;
   --hydro-wd:#d2a8ff; --hydro-wave:#ffa657;
 }
 
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--text);
-  font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial}
+body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial}
 
-/* Header gọn */
 header{display:flex;align-items:center;justify-content:space-between;
   padding:8px 12px;background:#0b3d91;color:#fff}
 header h1{margin:0;font-size:20px;font-weight:600}
 header .tools{display:flex;gap:6px;align-items:center}
-header button{background:#1f6feb;border:1px solid #2657a8;color:#fff;
-  padding:5px 9px;border-radius:8px;cursor:pointer}
+header button{background:#1f6feb;border:1px solid #2657a8;color:#fff;padding:5px 9px;border-radius:8px;cursor:pointer}
 header button:hover{filter:brightness(1.08)}
 
-/* Login */
 #login{max-width:360px;margin:12vh auto;background:var(--panel);
-  border:1px solid var(--border);border-radius:12px;padding:18px;
-  box-shadow:0 6px 20px rgba(0,0,0,.45)}
-#login h1,#login h2,#login .title{ text-align:center; margin:0 0 8px 0; } /* căn giữa */
-#login input{display:block;width:80%;max-width:280px;margin:8px auto;padding:8px;
-  background:#0f1418;color:var(--text);border:1px solid #29323a;border-radius:8px}
-#login button{display:block;width:80%;max-width:280px;margin:8px auto;padding:8px;
-  border-radius:8px;background:#1f6feb;border:1px solid #2657a8;color:#fff;cursor:pointer}
+  border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:0 6px 20px rgba(0,0,0,.45)}
+#login .title{text-align:center;margin:0 0 8px 0}
+#login input{display:block;width:80%;max-width:280px;margin:8px auto;padding:8px;background:#0f1418;color:var(--text);border:1px solid #29323a;border-radius:8px}
+#login button{display:block;width:80%;max-width:280px;margin:8px auto;padding:8px;border-radius:8px;background:#1f6feb;border:1px solid #2657a8;color:#fff;cursor:pointer}
 .hidden{display:none}
 
-/* Grid 2×5 */
-#grid{display:grid;grid-template-columns:repeat(2,minmax(320px,1fr));
-  gap:12px;padding:12px}
+#grid{display:grid;grid-template-columns:repeat(2,minmax(320px,1fr));gap:12px;padding:12px}
 
-/* Card */
-.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;
-  padding:8px;display:flex;flex-direction:column;gap:8px;box-shadow:0 6px 16px rgba(0,0,0,.35)}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px;box-shadow:0 6px 16px rgba(0,0,0,.35)}
 
-/* Title ngày */
-.title{display:flex;align-items:center;gap:8px;border-left:3px solid var(--accent);
-  border-radius:8px;padding:6px 8px;font-size:14px;background:var(--bg-soft)}
-.title.is-weekend{ background: var(--weekend-bg) !important; }
-.title.is-weekday{ background: var(--weekday-bg) !important; }
-
+.title{display:flex;align-items:center;gap:8px;border-left:3px solid var(--accent);border-radius:8px;padding:6px 8px;font-size:14px;background:var(--bg-soft)}
+.title.is-weekend{background:var(--weekend-bg)!important}
+.title.is-weekday{background:var(--weekday-bg)!important}
 .title .wd{font-weight:700}
-.title .greg{color:var(--cyan)}                     /* dương lịch: cyan */
-.title .lunar{color:#000;background:#ff534d;       /* âm lịch: badge đỏ */
-  padding:1px 6px;border-radius:6px;margin-left:auto}
+.title .greg{color:var(--cyan)}
+.title .lunar{color:#000;background:#ff534d;padding:1px 6px;border-radius:6px;margin-left:auto}
 .title .forecast-tag{margin-left:6px;color:#f2d;border:1px dashed #f2d;padding:1px 6px;border-radius:6px}
 
-/* Màu weekday text */
 .day-sun .wd{color:#ff7b72}
 .day-mon .wd{color:#58a6ff}
 .day-tue .wd{color:#f78166}
@@ -62,22 +46,14 @@ header button:hover{filter:brightness(1.08)}
 .day-fri .wd{color:#8b949e}
 .day-sat .wd{color:#ffa657}
 
-/* Canvas areas */
-.canvas-wrap{width:100%}
-.canvas-wrap.tide{height:150px}
-.canvas-wrap.pressure{height:120px}
-.canvas-wrap canvas{width:100% !important;height:100% !important;display:block}
+.canvas-wrap{width:100%;height:150px}
+.canvas-wrap + .canvas-wrap{height:120px}
+canvas{display:block;width:100%!important;height:100%!important}
 
-/* Hydro info line */
-.hydro{
-  display:flex; flex-wrap:wrap; gap:10px; padding:6px 8px;
-  background:var(--bg-soft); border-radius:8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size:12px;
-}
-.hydro .label{opacity:.9}
-.hydro .sea   {color:var(--hydro-sea)}
-.hydro .temp  {color:var(--hydro-temp)}
-.hydro .ws    {color:var(--hydro-ws)}
-.hydro .wd    {color:var(--hydro-wd)}
-.hydro .wave  {color:var(--hydro-wave)}
-.hydro .mean  {opacity:.8}
+.hydro{display:flex;flex-wrap:wrap;gap:10px;padding:6px 8px;background:var(--bg-soft);border-radius:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+.hydro .sea {color:var(--hydro-sea)}
+.hydro .temp{color:var(--hydro-temp)}
+.hydro .ws  {color:var(--hydro-ws)}
+.hydro .wd  {color:var(--hydro-wd)}
+.hydro .wave{color:var(--hydro-wave)}
+.hydro .mean{opacity:.8}

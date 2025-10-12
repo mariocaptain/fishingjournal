@@ -8,10 +8,14 @@ import requests
 # ===== Config =====
 LAT, LON = 16.3500, 107.9000
 LOCAL_TZ = tz.gettz("Asia/Ho_Chi_Minh")
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))  # trỏ lên root repo
+
+# script nằm trong thư mục etl/, ROOT là gốc repo
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DATA_DIR = os.path.join(ROOT, "data")
 SITE_DIR = os.path.join(ROOT, "site")
-os.makedirs(DATA_DIR, exist_ok=True); os.makedirs(SITE_DIR, exist_ok=True)
+os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(SITE_DIR, exist_ok=True)
+
 HISTORY_CSV = os.path.join(DATA_DIR, "history.csv")
 SITE_JSON   = os.path.join(SITE_DIR, "data.json")
 
@@ -56,20 +60,22 @@ def load_hist():
     return df
 
 def save_hist(df: pd.DataFrame):
+    """Luôn giữ history chỉ đến HÔM QUA."""
     df = df.copy()
     df["_d"] = df["Vietnam Date"].apply(parse_ddmmyyyy)
-    df = df.sort_values("_d").drop(columns=["_d"])
+    df = df[df["_d"] <= (today_local() - timedelta(days=1))].sort_values("_d").drop(columns=["_d"])
     df.to_csv(HISTORY_CSV, index=False)
 
 def missing_dates(df: pd.DataFrame):
-    today = today_local()
-    if df.empty: start = today - timedelta(days=7)
+    """Trả về danh sách ngày còn thiếu nhưng CHỈ tới hôm qua (không lấy hôm nay)."""
+    end = today_local() - timedelta(days=1)
+    if df.empty: start = end - timedelta(days=7)
     else:
         try: start = df["Vietnam Date"].apply(parse_ddmmyyyy).max() + timedelta(days=1)
-        except: start = today - timedelta(days=7)
-    if start > today: return []
+        except: start = end - timedelta(days=7)
+    if start > end: return []
     cur, out = start, []
-    while cur <= today: out.append(cur); cur += timedelta(days=1)
+    while cur <= end: out.append(cur); cur += timedelta(days=1)
     return out
 
 # ===== HTTP =====
@@ -123,18 +129,14 @@ def rows_for(miss, tides, hours):
         tide_by.setdefault(d, []).append({"time": iso_to_local(x["time"]),
                                           "height": x.get("height"), "type": x.get("type")})
 
-    # group hourly values by day
     g = {}
     for h in hours:
         d = iso_to_ddmmyyyy(h["time"])
         def pick(name):
-            v = h.get(name)
-            if isinstance(v, dict): v = v.get("noaa")
-            try:
-                f = float(v)
-                return f if math.isfinite(f) else None
+            v = h.get(name); v = v.get("noaa") if isinstance(v, dict) else v
+            try: f=float(v); return f if math.isfinite(f) else None
             except: return None
-        rec = g.setdefault(d, {"pressure":[], "wt":[], "ws":[], "wd":[], "wh":[], "sl":[] , "pres_series":[]})
+        rec = g.setdefault(d, {"pressure":[], "wt":[], "ws":[], "wd":[], "wh":[], "sl":[], "pres_series":[]})
         rec["pres_series"].append({"time": iso_to_local(h["time"]), "pressure": pick("pressure")})
         rec["wt"].append(pick("waterTemperature"))
         rec["ws"].append(pick("windSpeed"))
@@ -144,20 +146,13 @@ def rows_for(miss, tides, hours):
 
     out = []
     for d in miss:
-        ds = ddmmyyyy(d)
-        gg = g.get(ds, {})
-        sea  = mean(gg.get("sl",[]))
-        wt   = mean(gg.get("wt",[]))
-        ws   = mean(gg.get("ws",[]))
-        wd   = circular_mean_deg(gg.get("wd",[]))
-        wh   = mean(gg.get("wh",[]))
+        ds = ddmmyyyy(d); gg = g.get(ds, {})
+        sea = mean(gg.get("sl",[])); wt = mean(gg.get("wt",[])); ws = mean(gg.get("ws",[]))
+        wd  = circular_mean_deg(gg.get("wd",[])); wh = mean(gg.get("wh",[]))
         pres_series = [p for p in gg.get("pres_series",[]) if p["pressure"] is not None]
-
         out.append({
-            "Vietnam Date": ds,
-            "Lunar Date":   lunar_ddmm(d),
-            "Tidal Data":   str(tide_by.get(ds, [])),
-            "Pressure Data":str(pres_series),
+            "Vietnam Date": ds, "Lunar Date": lunar_ddmm(d),
+            "Tidal Data": str(tide_by.get(ds, [])), "Pressure Data": str(pres_series),
             "Sea Level": "" if sea is None else f"{sea:.4f}",
             "Water Temperature": "" if wt is None else f"{wt:.4f}",
             "Wind Speed": "" if ws is None else f"{ws:.4f}",
@@ -167,7 +162,7 @@ def rows_for(miss, tides, hours):
         })
     return pd.DataFrame(out) if out else None
 
-# ===== Forecast build (also with daily means) =====
+# ===== Forecast build (today..today+9) =====
 def build_forecast(start_d: date, end_d: date):
     tides = fetch_tide(start_d, end_d)
     hours = fetch_weather(start_d, end_d)
@@ -181,8 +176,8 @@ def build_forecast(start_d: date, end_d: date):
     for h in hours:
         d = iso_to_ddmmyyyy(h["time"])
         def pick(name):
-            v = h.get(name);  v = v.get("noaa") if isinstance(v, dict) else v
-            try: f=float(v);  return f if math.isfinite(f) else None
+            v = h.get(name); v = v.get("noaa") if isinstance(v, dict) else v
+            try: f=float(v); return f if math.isfinite(f) else None
             except: return None
         rec = g.setdefault(d, {"pressure":[], "wt":[], "ws":[], "wd":[], "wh":[], "sl":[], "pres_series":[]})
         rec["pres_series"].append({"time": iso_to_local(h["time"]), "pressure": pick("pressure")})
@@ -195,8 +190,8 @@ def build_forecast(start_d: date, end_d: date):
     out, cur = [], start_d
     while cur <= end_d:
         ds = ddmmyyyy(cur); gg = g.get(ds, {})
-        sea  = mean(gg.get("sl",[])); wt = mean(gg.get("wt",[])); ws = mean(gg.get("ws",[]))
-        wd   = circular_mean_deg(gg.get("wd",[])); wh = mean(gg.get("wh",[]))
+        sea = mean(gg.get("sl",[])); wt = mean(gg.get("wt",[])); ws = mean(gg.get("ws",[]))
+        wd  = circular_mean_deg(gg.get("wd",[])); wh = mean(gg.get("wh",[]))
         pres_series = [p for p in gg.get("pres_series",[]) if p["pressure"] is not None]
         out.append({
             "vietnam_date": ds, "lunar_date": lunar_ddmm(cur), "is_forecast": True,
@@ -207,39 +202,61 @@ def build_forecast(start_d: date, end_d: date):
         cur += timedelta(days=1)
     return out
 
-# ===== Export site/data.json =====
+# ===== Export site/data.json (dedup theo ngày) =====
 def export_json(df: pd.DataFrame, forecast: list):
     def parse_list(s):
         if not s: return []
         try: return ast.literal_eval(s)
         except: return []
-    days = []
+    items = []
+    yesterday = today_local() - timedelta(days=1)
+    # lịch sử ≤ hôm qua
     for _, r in df.iterrows():
-        days.append({
-            "vietnam_date": r["Vietnam Date"],
-            "lunar_date":   r["Lunar Date"],
-            "tidal_data":   parse_list(r["Tidal Data"]),
-            "pressure_data":parse_list(r["Pressure Data"]),
-            "sea_level": float(r["Sea Level"]) if r["Sea Level"] else None,
-            "water_temperature": float(r["Water Temperature"]) if r["Water Temperature"] else None,
-            "wind_speed": float(r["Wind Speed"]) if r["Wind Speed"] else None,
-            "wind_direction": float(r["Wind Direction"]) if r["Wind Direction"] else None,
-            "wave_height": float(r["Wave Height"]) if r["Wave Height"] else None,
-            "is_forecast":  False
+        d = parse_ddmmyyyy(r["Vietnam Date"])
+        if d <= yesterday:
+            items.append({
+                "vietnam_date": r["Vietnam Date"], "lunar_date": r["Lunar Date"],
+                "tidal_data": parse_list(r["Tidal Data"]), "pressure_data": parse_list(r["Pressure Data"]),
+                "sea_level": float(r["Sea Level"]) if r["Sea Level"] else None,
+                "water_temperature": float(r["Water Temperature"]) if r["Water Temperature"] else None,
+                "wind_speed": float(r["Wind Speed"]) if r["Wind Speed"] else None,
+                "wind_direction": float(r["Wind Direction"]) if r["Wind Direction"] else None,
+                "wave_height": float(r["Wave Height"]) if r["Wave Height"] else None,
+                "is_forecast": False
+            })
+    # forecast ≥ hôm nay
+    for f in forecast or []:
+        items.append({
+            "vietnam_date": f["vietnam_date"], "lunar_date": f["lunar_date"],
+            "tidal_data": f.get("tidal_data") or [], "pressure_data": f.get("pressure_data") or [],
+            "sea_level": f.get("sea_level"), "water_temperature": f.get("water_temperature"),
+            "wind_speed": f.get("wind_speed"), "wind_direction": f.get("wind_direction"),
+            "wave_height": f.get("wave_height"), "is_forecast": True
         })
-    # sort + nối forecast
-    def k(x): return parse_ddmmyyyy(x["vietnam_date"])
-    days = sorted(days, key=k)
-    all_days = sorted(days + (forecast or []), key=k)
+    # khử trùng lặp: quá khứ ưu tiên history; từ hôm nay ưu tiên forecast
+    today_ = today_local()
+    by_day = {}
+    for it in items:
+        d = parse_ddmmyyyy(it["vietnam_date"]); k = it["vietnam_date"]
+        if d >= today_:
+            if k not in by_day or (not by_day[k]["is_forecast"] and it["is_forecast"]):
+                by_day[k] = it
+        else:
+            if k not in by_day or (by_day[k]["is_forecast"] and not it["is_forecast"]):
+                by_day[k] = it
+    out = sorted(by_day.values(), key=lambda x: parse_ddmmyyyy(x["vietnam_date"]))
     with open(SITE_JSON, "w", encoding="utf-8") as f:
-        json.dump({"meta":{"generated_at": datetime.now(LOCAL_TZ).isoformat(),
-                           "rows": len(all_days)},
-                   "days": all_days}, f, ensure_ascii=False, indent=2)
+        json.dump({"meta":{"generated_at": datetime.now(LOCAL_TZ).isoformat(), "rows": len(out)},
+                   "days": out}, f, ensure_ascii=False, indent=2)
 
 # ===== Main =====
 def main():
     try:
         df = load_hist()
+        # dọn future rows lỡ lưu trước đây
+        save_hist(df)  # tự cắt về <= hôm qua
+        df = load_hist()
+
         miss = missing_dates(df)
         if miss:
             s, e = miss[0], miss[-1]
@@ -248,7 +265,7 @@ def main():
                 df = pd.concat([df, add], ignore_index=True)
                 save_hist(df)
 
-        s_fc = today_local() + timedelta(days=1)
+        s_fc = today_local()
         e_fc = s_fc + timedelta(days=9)
         forecast = build_forecast(s_fc, e_fc)
 

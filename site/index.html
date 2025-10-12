@@ -1,34 +1,36 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Central Vietnam Fishing Calendar (Web)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="./styles.css?v=20251012b" />
-  <!-- Chart.js cho biểu đồ thủy triều -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>Central Vietnam Fishing Calendar</title>
+  <link rel="stylesheet" href="./styles.css?v=2025-10-12c" />
 </head>
 <body>
-  <div id="login">
-    <h2>Log in</h2>
-    <input id="user" placeholder="Username" />
-    <input id="pass" placeholder="Password" type="password" />
+  <header>
+    <h1>Central Vietnam Fishing Calendar</h1>
+    <div class="tools">
+      <button id="prev">◀ Previous</button>
+      <span id="pageInfo"></span>
+      <button id="next">Next ▶</button>
+    </div>
+  </header>
+
+  <section id="login">
+    <h2 class="title">Log in</h2>
+    <input id="user" type="text" placeholder="Username" />
+    <input id="pass" type="password" placeholder="Password" />
     <button id="btnLogin">Log in</button>
-  </div>
+  </section>
 
-  <div id="app" class="hidden">
-    <header>
-      <h1>Central Vietnam Fishing Calendar</h1>
-      <div>
-        <button id="prev">◀ Previous</button>
-        <span id="pageInfo"></span>
-        <button id="next">Next ▶</button>
-      </div>
-    </header>
+  <section id="app" class="hidden">
+    <div id="grid"></div>
+  </section>
 
-    <main id="grid"></main>
-  </div>
+  <!-- Chart.js (giống bản trước đây đã vẽ đúng) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3"></script>
 
-  <script src="./app.js?v=20251012b" defer></script>
+  <!-- App -->
+  <script src="./app.js?v=2025-10-12c" defer></script>
 </body>
 </html>
