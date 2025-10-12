@@ -1,4 +1,3 @@
-<script>
 // ====== Config màu & helpers ======
 const COLORS = {
   weekdayBadge: {
@@ -343,4 +342,3 @@ document.addEventListener('DOMContentLoaded', () => {
   bindLogin();
   ensureAuth() && init();
 });
-</script>
