@@ -188,7 +188,7 @@ function render() {
   const slice = ALL.slice(start, start + PAGE_SIZE);
 
   grid.innerHTML = "";
-  pageInfo.textContent = `Trang ${page + 1} / ${last + 1} • Tổng ngày: ${
+  pageInfo.textContent = `Page ${page + 1} / ${last + 1} • Total days: ${
     ALL.length
   }`;
 

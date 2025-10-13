@@ -2,8 +2,8 @@
   --bg:#0c0f11; --bg-soft:#12161a; --panel:#11161a;
   --text:#d0d0d0; --muted:#9aa0a6; --border:#2a2f36; --accent:#00cc66;
   --cyan:#9cdcfe; --yaxis:#ce9178;
-  --weekend-bg:#b50415;      /* weekend rõ */
-  --weekday-bg:#00802d;      /* Mon–Fri nền riêng */
+  --weekend-bg:#80000c;      /* weekend rõ */
+  --weekday-bg:#015c21;      /* Mon–Fri nền riêng */
   --hydro-sea:#79c0ff; --hydro-temp:#ffd166; --hydro-ws:#90ee90;
   --hydro-wd:#d2a8ff; --hydro-wave:#ffa657;
 }
