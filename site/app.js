@@ -240,47 +240,151 @@ function render() {
       .filter((p) => p.y !== null)
       .sort((a, b) => a.x - b.x);
 	// ----- Chart thủy triều (Chart.js) -----
-	const tideCtx = cv1.getContext("2d");
-	new Chart(tideCtx, {
-	  type: "line",
-	  data: {
-		datasets: [
-		  {
-			label: "Tide (m)",
-			data: tidePts.map(p => ({ x: p.x.getHours() + p.x.getMinutes()/60, y: p.y })),
-			parsing: false,
-			borderColor: "#79c0ff",
-			borderWidth: 2,
-			pointRadius: 3,
-			tension: 0.3,
-		  },
-		],
-	  },
-	  options: {
-		animation: false,
-		responsive: false,
-		maintainAspectRatio: false,
-		scales: {
-		  x: {
-			type: "linear",
-			min: 0,
-			max: 24,
-			ticks: {
-			  stepSize: 3,
-			  callback: (v) => `${v}:00`,
-			  color: "#9cdcfe",
+	(function () {
+	  // Chuẩn hóa dữ liệu: đổi Date -> giờ thập phân
+	  const basePts = tidePts.map(p => ({
+		x: p.x.getHours() + p.x.getMinutes() / 60,
+		y: p.y,
+		_label: p.label // giữ lại để gán nhãn tick
+	  })).sort((a, b) => a.x - b.x);
+
+	  // Hàm nội suy tuyến tính y tại giờ targetH (nếu nằm giữa 2 điểm kề nhau)
+	  function interpAt(targetH, arr) {
+		if (!arr.length) return null;
+		// nếu target trùng sẵn điểm dữ liệu thì dùng luôn
+		for (const pt of arr) if (Math.abs(pt.x - targetH) < 1e-6) return { x: pt.x, y: pt.y, _label: `${String(Math.floor(targetH)).padStart(2,"0")}:${String(Math.round((targetH%1)*60)).padStart(2,"0")}` };
+
+		// tìm khoảng [i, i+1] chứa target
+		for (let i = 0; i < arr.length - 1; i++) {
+		  const a = arr[i], b = arr[i + 1];
+		  if (a.x <= targetH && targetH <= b.x && b.x !== a.x) {
+			const t = (targetH - a.x) / (b.x - a.x);
+			const y = a.y + (b.y - a.y) * t;
+			return {
+			  x: targetH,
+			  y,
+			  _label: `${String(Math.floor(targetH)).padStart(2,"0")}:${String(Math.round((targetH%1)*60)).padStart(2,"0")}`
+			};
+		  }
+		}
+		return null; // ngoài khoảng dữ liệu -> bỏ qua
+	  }
+
+	  // Thêm điểm nội suy 09:00 và 16:00 nếu áp dụng được
+	  const extra = [];
+	  const p9 = interpAt(9, basePts);
+	  if (p9) extra.push(p9);
+	  const p16 = interpAt(16, basePts);
+	  if (p16) extra.push(p16);
+
+	  const dataPts = [...basePts, ...extra].sort((a, b) => a.x - b.x);
+
+	  // Tập ticks cho X: đúng tại các điểm dữ liệu (kể cả 9 và 16 nếu có)
+	  const xTicksValues = Array.from(new Set(dataPts.map(p => +p.x.toFixed(4)))).sort((a, b) => a - b);
+
+	  // Tập ticks cho Y: đúng bằng các giá trị dữ liệu + luôn có 0
+	  const ySet = new Set([0]);
+	  dataPts.forEach(p => ySet.add(+p.y));
+	  const yTicksValues = Array.from(ySet).sort((a, b) => a - b);
+
+	  // Plugin: tô nền khung giờ 09:00–16:00 trong vùng vẽ (nếu nằm trong min/max X)
+	  const shade0916 = {
+		id: "shade0916",
+		beforeDraw(chart, args, opts) {
+		  const {ctx, chartArea, scales} = chart;
+		  const xScale = scales.x;
+		  if (!xScale) return;
+		  const xMin = xScale.min, xMax = xScale.max;
+		  const left = Math.max(9, xMin);
+		  const right = Math.min(16, xMax);
+		  if (right <= left) return; // ngoài vùng dữ liệu -> không vẽ
+
+		  const x1 = xScale.getPixelForValue(left);
+		  const x2 = xScale.getPixelForValue(right);
+		  ctx.save();
+		  ctx.fillStyle = "rgba(255, 223, 128, 0.15)"; // vàng nhạt, rất nhẹ
+		  ctx.fillRect(x1, chartArea.top, x2 - x1, chartArea.bottom - chartArea.top);
+		  ctx.restore();
+		}
+	  };
+
+	  const tideCtx = cv1.getContext("2d");
+	  new Chart(tideCtx, {
+		type: "line",
+		data: {
+		  datasets: [
+			{
+			  label: "Tide (m)",
+			  data: dataPts,       // [{x: hourFloat, y: value}, ...]
+			  parsing: false,
+			  borderColor: "#79c0ff",
+			  borderWidth: 2,
+			  pointRadius: 3,
+			  // Đường thẳng, không cong:
+			  tension: 0
 			},
-			grid: { color: "#1b2229" },
+		  ],
+		},
+		options: {
+		  animation: false,
+		  responsive: false,
+		  maintainAspectRatio: false,
+		  scales: {
+			x: {
+			  type: "linear",
+			  min: Math.max(0, Math.min(...dataPts.map(p => p.x), 24)),
+			  max: Math.min(24, Math.max(...dataPts.map(p => p.x), 0)),
+			  ticks: {
+				autoSkip: false,
+				// Ta sẽ tự đổ ticks bằng afterBuildTicks; callback chỉ để hiển thị đẹp:
+				callback: (v) => {
+				  const hh = Math.floor(v);
+				  const mm = Math.round((v % 1) * 60);
+				  return `${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}`;
+				},
+				color: "#9cdcfe",
+			  },
+			  grid: { color: "#1b2229" },
+			  // Chỉ tạo ticks đúng tại các điểm dữ liệu (và 09:00, 16:00 nếu có)
+			  afterBuildTicks: (scale) => {
+				scale.ticks = xTicksValues.map(val => ({ value: val }));
+			  },
+			},
+			y: {
+			  // Không ép về 0; nhưng luôn có tick ở 0 qua afterBuildTicks
+			  ticks: {
+				color: "#ce9178",
+				callback: (v) => (Number.isFinite(v) ? v.toFixed(2) : v)
+			  },
+			  grid: {
+				color: (ctx) => {
+				  // nhấn mạnh đường = 0 một chút
+				  if (ctx.tick && ctx.tick.value === 0) return "#2a2f36";
+				  return "#1b2229";
+				}
+			  },
+			  afterBuildTicks: (scale) => {
+				// Đặt đúng các vạch tại giá trị dữ liệu + 0
+				scale.ticks = yTicksValues.map(val => ({ value: val }));
+				// Cập nhật min/max hợp lý để không cắt mất data
+				const min = Math.min(...yTicksValues);
+				const max = Math.max(...yTicksValues);
+				// Thêm chút đệm nhìn cho thoáng
+				scale.min = min === max ? min - 1 : min;
+				scale.max = min === max ? max + 1 : max;
+			  },
+			},
 		  },
-		  y: {
-			beginAtZero: false,
-			ticks: { color: "#ce9178" },
-			grid: { color: "#1b2229" },
+		  plugins: {
+			legend: { display: false },
+			// bật plugin highlight 09–16
+			shade0916: {}
 		  },
 		},
-		plugins: { legend: { display: false } },
-	  },
-	});
+		plugins: [shade0916],
+	  });
+	})();
+
 
     // PRESSURE chart
     const wrap2 = document.createElement("div");
