@@ -241,68 +241,115 @@ function render() {
       .sort((a, b) => a.x - b.x);
 	// ----- Chart thủy triều (Chart.js) -----
 	(function () {
-	  // Chuẩn hóa dữ liệu: đổi Date -> giờ thập phân
+	  // Tăng chiều cao canvas từ 150 -> 200 (không đụng cấu trúc nơi khác)
+	  cv1.height = 200;
+
+	  // Chuẩn hóa dữ liệu nguồn: đổi Date -> giờ thập phân
 	  const basePts = tidePts.map(p => ({
 		x: p.x.getHours() + p.x.getMinutes() / 60,
 		y: p.y,
-		_label: p.label // giữ lại để gán nhãn tick
+		_label: p.label
 	  })).sort((a, b) => a.x - b.x);
 
-	  // Hàm nội suy tuyến tính y tại giờ targetH (nếu nằm giữa 2 điểm kề nhau)
+	  // Tiện ích: kiểm tra đã có điểm trong một khoảng giờ [lo, hi]
+	  function hasPointInRange(arr, lo, hi) {
+		return arr.some(pt => pt.x >= lo && pt.x <= hi);
+	  }
+
+	  // Nội suy tuyến tính tại giờ targetH nếu nằm giữa hai điểm kề nhau
 	  function interpAt(targetH, arr) {
 		if (!arr.length) return null;
-		// nếu target trùng sẵn điểm dữ liệu thì dùng luôn
-		for (const pt of arr) if (Math.abs(pt.x - targetH) < 1e-6) return { x: pt.x, y: pt.y, _label: `${String(Math.floor(targetH)).padStart(2,"0")}:${String(Math.round((targetH%1)*60)).padStart(2,"0")}` };
-
-		// tìm khoảng [i, i+1] chứa target
+		// nếu trùng sẵn thì trả lại luôn
+		for (const pt of arr) if (Math.abs(pt.x - targetH) < 1e-6) return { x: pt.x, y: pt.y, _label: hhmmLabel(targetH) };
 		for (let i = 0; i < arr.length - 1; i++) {
 		  const a = arr[i], b = arr[i + 1];
 		  if (a.x <= targetH && targetH <= b.x && b.x !== a.x) {
 			const t = (targetH - a.x) / (b.x - a.x);
 			const y = a.y + (b.y - a.y) * t;
-			return {
-			  x: targetH,
-			  y,
-			  _label: `${String(Math.floor(targetH)).padStart(2,"0")}:${String(Math.round((targetH%1)*60)).padStart(2,"0")}`
-			};
+			return { x: targetH, y, _label: hhmmLabel(targetH) };
 		  }
 		}
-		return null; // ngoài khoảng dữ liệu -> bỏ qua
+		return null;
 	  }
 
-	  // Thêm điểm nội suy 09:00 và 16:00 nếu áp dụng được
+	  function hhmmLabel(hourFloat) {
+		const hh = Math.floor(hourFloat);
+		const mm = Math.round((hourFloat % 1) * 60);
+		return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+	  }
+
+	  // Thêm điểm nội suy theo quy tắc mới:
+	  // - 09:00 nếu KHÔNG có điểm trong [08:00, 10:00]
+	  // - 16:30 nếu KHÔNG có điểm trong [15:30, 17:30]
 	  const extra = [];
-	  const p9 = interpAt(9, basePts);
-	  if (p9) extra.push(p9);
-	  const p16 = interpAt(16, basePts);
-	  if (p16) extra.push(p16);
+	  if (!hasPointInRange(basePts, 8, 10)) {
+		const p9 = interpAt(9, basePts);
+		if (p9) extra.push(p9);
+	  }
+	  if (!hasPointInRange(basePts, 15.5, 17.5)) {
+		const p1630 = interpAt(16.5, basePts);
+		if (p1630) extra.push(p1630);
+	  }
 
 	  const dataPts = [...basePts, ...extra].sort((a, b) => a.x - b.x);
 
-	  // Tập ticks cho X: đúng tại các điểm dữ liệu (kể cả 9 và 16 nếu có)
+	  // X ticks: đúng tại các điểm dữ liệu (kể cả 09:00 / 16:30 nếu có)
 	  const xTicksValues = Array.from(new Set(dataPts.map(p => +p.x.toFixed(4)))).sort((a, b) => a - b);
 
-	  // Tập ticks cho Y: đúng bằng các giá trị dữ liệu + luôn có 0
-	  const ySet = new Set([0]);
-	  dataPts.forEach(p => ySet.add(+p.y));
-	  const yTicksValues = Array.from(ySet).sort((a, b) => a - b);
+	  // ----- Smart ticks cho trục Y -----
+	  // Tìm min/max dữ liệu, bảo đảm luôn chứa 0
+	  const yVals = dataPts.map(p => p.y);
+	  let yMin = Math.min(...yVals);
+	  let yMax = Math.max(...yVals);
+	  if (!Number.isFinite(yMin) || !Number.isFinite(yMax)) { yMin = 0; yMax = 1; }
+	  if (yMin > 0) yMin = 0;             // mở rộng để chứa 0 nếu cần
+	  if (yMax < 0) yMax = 0;
 
-	  // Plugin: tô nền khung giờ 09:00–16:00 trong vùng vẽ (nếu nằm trong min/max X)
+	  // Chọn bước "đẹp" để tổng số tick không quá ~7
+	  function niceStep(min, max, maxTicks = 7) {
+		const range = Math.max(1e-6, max - min);
+		const cand = [0.05, 0.1, 0.2, 0.25, 0.5, 1, 2];
+		for (const s of cand) {
+		  const count = Math.floor((Math.ceil(max / s) * s - Math.floor(min / s) * s) / s) + 1;
+		  if (count <= maxTicks) return s;
+		}
+		// nếu vẫn nhiều thì tăng theo bội số 2/5/10
+		let s = 2;
+		while (Math.ceil(range / s) + 1 > maxTicks) s *= 2;
+		return s;
+	  }
+
+	  const step = niceStep(yMin, yMax, 7);
+	  const yStart = Math.floor(yMin / step) * step;
+	  const yEnd   = Math.ceil(yMax / step) * step;
+
+	  // Tạo danh sách tick, chắc chắn có 0
+	  const yTicksValues = [];
+	  for (let v = yStart; v <= yEnd + 1e-9; v += step) {
+		// tránh trôi số
+		const vv = Math.round(v * 1000) / 1000;
+		yTicksValues.push(vv);
+	  }
+	  if (!yTicksValues.some(v => Math.abs(v) < 1e-9)) {
+		yTicksValues.push(0);
+		yTicksValues.sort((a, b) => a - b);
+	  }
+
+	  // Plugin highlight khung 09:00–16:00 (giữ như yêu cầu ban đầu)
 	  const shade0916 = {
 		id: "shade0916",
-		beforeDraw(chart, args, opts) {
-		  const {ctx, chartArea, scales} = chart;
+		beforeDraw(chart) {
+		  const { ctx, chartArea, scales } = chart;
 		  const xScale = scales.x;
 		  if (!xScale) return;
 		  const xMin = xScale.min, xMax = xScale.max;
 		  const left = Math.max(9, xMin);
 		  const right = Math.min(16, xMax);
-		  if (right <= left) return; // ngoài vùng dữ liệu -> không vẽ
-
+		  if (right <= left) return;
 		  const x1 = xScale.getPixelForValue(left);
 		  const x2 = xScale.getPixelForValue(right);
 		  ctx.save();
-		  ctx.fillStyle = "rgba(255, 223, 128, 0.15)"; // vàng nhạt, rất nhẹ
+		  ctx.fillStyle = "rgba(255, 223, 128, 0.15)";
 		  ctx.fillRect(x1, chartArea.top, x2 - x1, chartArea.bottom - chartArea.top);
 		  ctx.restore();
 		}
@@ -315,15 +362,14 @@ function render() {
 		  datasets: [
 			{
 			  label: "Tide (m)",
-			  data: dataPts,       // [{x: hourFloat, y: value}, ...]
+			  data: dataPts,          // [{x: hourFloat, y: value}]
 			  parsing: false,
 			  borderColor: "#79c0ff",
 			  borderWidth: 2,
 			  pointRadius: 3,
-			  // Đường thẳng, không cong:
-			  tension: 0
-			},
-		  ],
+			  tension: 0              // đường thẳng, không cong
+			}
+		  ]
 		},
 		options: {
 		  animation: false,
@@ -336,52 +382,43 @@ function render() {
 			  max: Math.min(24, Math.max(...dataPts.map(p => p.x), 0)),
 			  ticks: {
 				autoSkip: false,
-				// Ta sẽ tự đổ ticks bằng afterBuildTicks; callback chỉ để hiển thị đẹp:
-				callback: (v) => {
-				  const hh = Math.floor(v);
-				  const mm = Math.round((v % 1) * 60);
-				  return `${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}`;
-				},
+				maxRotation: 60,
+				minRotation: 45,
+				font: { size: 10 },
+				callback: (v) => hhmmLabel(v),
 				color: "#9cdcfe",
+				padding: 3
 			  },
 			  grid: { color: "#1b2229" },
-			  // Chỉ tạo ticks đúng tại các điểm dữ liệu (và 09:00, 16:00 nếu có)
 			  afterBuildTicks: (scale) => {
 				scale.ticks = xTicksValues.map(val => ({ value: val }));
-			  },
+			  }
 			},
 			y: {
-			  // Không ép về 0; nhưng luôn có tick ở 0 qua afterBuildTicks
 			  ticks: {
+				font: { size: 10 },
 				color: "#ce9178",
-				callback: (v) => (Number.isFinite(v) ? v.toFixed(2) : v)
+				padding: 3,
+				// Hiển thị 1 chữ số thập phân
+				callback: (v) => (Number.isFinite(v) ? (Math.round(v * 10) / 10).toFixed(1) : v)
 			  },
 			  grid: {
-				color: (ctx) => {
-				  // nhấn mạnh đường = 0 một chút
-				  if (ctx.tick && ctx.tick.value === 0) return "#2a2f36";
-				  return "#1b2229";
-				}
+				color: (ctx) => (ctx.tick && Math.abs(ctx.tick.value) < 1e-9 ? "#2a2f36" : "#1b2229")
 			  },
 			  afterBuildTicks: (scale) => {
-				// Đặt đúng các vạch tại giá trị dữ liệu + 0
+				// đặt ticks "thưa & đẹp", luôn có 0
 				scale.ticks = yTicksValues.map(val => ({ value: val }));
-				// Cập nhật min/max hợp lý để không cắt mất data
-				const min = Math.min(...yTicksValues);
-				const max = Math.max(...yTicksValues);
-				// Thêm chút đệm nhìn cho thoáng
-				scale.min = min === max ? min - 1 : min;
-				scale.max = min === max ? max + 1 : max;
-			  },
-			},
+				scale.min = yTicksValues[0];
+				scale.max = yTicksValues[yTicksValues.length - 1];
+			  }
+			}
 		  },
 		  plugins: {
 			legend: { display: false },
-			// bật plugin highlight 09–16
 			shade0916: {}
-		  },
+		  }
 		},
-		plugins: [shade0916],
+		plugins: [shade0916]
 	  });
 	})();
 
