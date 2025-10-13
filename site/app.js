@@ -241,26 +241,29 @@ function render() {
       .sort((a, b) => a.x - b.x);
 	// ----- Chart thủy triều (Chart.js) -----
 	(function () {
-	  // Tăng chiều cao canvas từ 150 -> 200 (không đụng cấu trúc nơi khác)
+	  // 1) Canvas height = 200px
 	  cv1.height = 200;
 
-	  // Chuẩn hóa dữ liệu nguồn: đổi Date -> giờ thập phân
+	  // Chuẩn hóa dữ liệu nguồn: Date -> giờ thập phân
 	  const basePts = tidePts.map(p => ({
 		x: p.x.getHours() + p.x.getMinutes() / 60,
 		y: p.y,
 		_label: p.label
 	  })).sort((a, b) => a.x - b.x);
 
-	  // Tiện ích: kiểm tra đã có điểm trong một khoảng giờ [lo, hi]
+	  // Tiện ích
 	  function hasPointInRange(arr, lo, hi) {
 		return arr.some(pt => pt.x >= lo && pt.x <= hi);
 	  }
-
-	  // Nội suy tuyến tính tại giờ targetH nếu nằm giữa hai điểm kề nhau
+	  function hhmmLabel(hourFloat) {
+		const hh = Math.floor(hourFloat);
+		const mm = Math.round((hourFloat % 1) * 60);
+		return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+	  }
 	  function interpAt(targetH, arr) {
 		if (!arr.length) return null;
-		// nếu trùng sẵn thì trả lại luôn
-		for (const pt of arr) if (Math.abs(pt.x - targetH) < 1e-6) return { x: pt.x, y: pt.y, _label: hhmmLabel(targetH) };
+		for (const pt of arr) if (Math.abs(pt.x - targetH) < 1e-6)
+		  return { x: pt.x, y: pt.y, _label: hhmmLabel(targetH) };
 		for (let i = 0; i < arr.length - 1; i++) {
 		  const a = arr[i], b = arr[i + 1];
 		  if (a.x <= targetH && targetH <= b.x && b.x !== a.x) {
@@ -272,13 +275,7 @@ function render() {
 		return null;
 	  }
 
-	  function hhmmLabel(hourFloat) {
-		const hh = Math.floor(hourFloat);
-		const mm = Math.round((hourFloat % 1) * 60);
-		return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
-	  }
-
-	  // Thêm điểm nội suy theo quy tắc mới:
+	  // 2) Nội suy theo quy tắc đã chốt:
 	  // - 09:00 nếu KHÔNG có điểm trong [08:00, 10:00]
 	  // - 16:30 nếu KHÔNG có điểm trong [15:30, 17:30]
 	  const extra = [];
@@ -296,68 +293,91 @@ function render() {
 	  // X ticks: đúng tại các điểm dữ liệu (kể cả 09:00 / 16:30 nếu có)
 	  const xTicksValues = Array.from(new Set(dataPts.map(p => +p.x.toFixed(4)))).sort((a, b) => a - b);
 
-	  // ----- Smart ticks cho trục Y -----
-	  // Tìm min/max dữ liệu, bảo đảm luôn chứa 0
+	  // 3) Thiết lập trục Y:
+	  // - Grid mỗi 0.2m (nhạt hơn)
+	  // - Chỉ hiển thị hai nhãn -0.4 và 0.4
+	  // - Phạm vi bao trùm ít nhất [-0.4, 0.4], mở rộng theo dữ liệu và "bắt" về bội số 0.2
 	  const yVals = dataPts.map(p => p.y);
-	  let yMin = Math.min(...yVals);
-	  let yMax = Math.max(...yVals);
-	  if (!Number.isFinite(yMin) || !Number.isFinite(yMax)) { yMin = 0; yMax = 1; }
-	  if (yMin > 0) yMin = 0;             // mở rộng để chứa 0 nếu cần
-	  if (yMax < 0) yMax = 0;
+	  let rawMin = Math.min(...yVals);
+	  let rawMax = Math.max(...yVals);
+	  if (!Number.isFinite(rawMin) || !Number.isFinite(rawMax)) { rawMin = -0.4; rawMax = 0.4; }
 
-	  // Chọn bước "đẹp" để tổng số tick không quá ~7
-	  function niceStep(min, max, maxTicks = 7) {
-		const range = Math.max(1e-6, max - min);
-		const cand = [0.05, 0.1, 0.2, 0.25, 0.5, 1, 2];
-		for (const s of cand) {
-		  const count = Math.floor((Math.ceil(max / s) * s - Math.floor(min / s) * s) / s) + 1;
-		  if (count <= maxTicks) return s;
+	  const stepY = 0.2;
+
+	  function snapDown(v, step) { return Math.floor(v / step) * step; }
+	  function snapUp(v, step)   { return Math.ceil(v / step) * step; }
+
+	  let yMin = snapDown(Math.min(rawMin, -0.4), stepY);
+	  let yMax = snapUp(Math.max(rawMax, 0.4), stepY);
+	  // đảm bảo có ít nhất 4 vạch grid nhìn cho thoáng
+	  if (yMax - yMin < stepY * 3) {
+		yMin = snapDown(yMin - stepY, stepY);
+		yMax = snapUp(yMax + stepY, stepY);
+	  }
+
+	  // 4) Plugin highlight khung 09:00–16:30
+	  const shade091630 = {
+		id: "shade091630",
+		beforeDraw(chart) {
+		  const { ctx, chartArea, scales } = chart;
+		  const xScale = scales.x;
+		  if (!xScale) return;
+
+		  const xMin = xScale.min, xMax = xScale.max;
+		  const left = Math.max(9, xMin);
+		  const right = Math.min(16.5, xMax); // 16.5 = 16:30
+
+		  if (right <= left) return;
+
+		  const x1 = xScale.getPixelForValue(left);
+		  const x2 = xScale.getPixelForValue(right);
+
+		  ctx.save();
+		  ctx.fillStyle = "rgba(255, 223, 128, 0.15)";
+		  ctx.fillRect(x1, chartArea.top, x2 - x1, chartArea.bottom - chartArea.top);
+		  ctx.restore();
 		}
-		// nếu vẫn nhiều thì tăng theo bội số 2/5/10
-		let s = 2;
-		while (Math.ceil(range / s) + 1 > maxTicks) s *= 2;
-		return s;
-	  }
+	  };
 
-	  const step = niceStep(yMin, yMax, 7);
-	  const yStart = Math.floor(yMin / step) * step;
-	  const yEnd   = Math.ceil(yMax / step) * step;
+	  // 5) Plugin vẽ giá trị thực tại các điểm trong khung 06:00–16:30 (2 chữ số thập phân)
+	  const pointValueLabels = {
+		id: "pointValueLabels",
+		afterDatasetsDraw(chart) {
+		  const { ctx, scales, chartArea } = chart;
+		  const xScale = scales.x;
+		  const yScale = scales.y;
+		  if (!xScale || !yScale) return;
 
-	  // Tạo danh sách tick, chắc chắn có 0
-	  const yTicksValues = [];
-	  for (let v = yStart; v <= yEnd + 1e-9; v += step) {
-		// tránh trôi số
-		const vv = Math.round(v * 1000) / 1000;
-		yTicksValues.push(vv);
-	  }
-	  if (!yTicksValues.some(v => Math.abs(v) < 1e-9)) {
-		yTicksValues.push(0);
-		yTicksValues.sort((a, b) => a - b);
-	  }
+		  const meta = chart.getDatasetMeta(0);
+		  ctx.save();
+		  ctx.font = "10px sans-serif";
+		  ctx.fillStyle = "#c8e1ff";
+		  ctx.textAlign = "center";
+		  ctx.textBaseline = "bottom";
 
-	// Plugin highlight khung 09:00–16:30
-	const shade0916 = {
-	  id: "shade0916",
-	  beforeDraw(chart) {
-		const { ctx, chartArea, scales } = chart;
-		const xScale = scales.x;
-		if (!xScale) return;
+		  const nodes = meta.data || [];
+		  for (let i = 0; i < nodes.length; i++) {
+			const ptModel = nodes[i];
+			const raw = chart.data.datasets[0].data[i];
+			const hour = raw && typeof raw.x === "number" ? raw.x : null;
+			if (hour == null) continue;
 
-		const xMin = xScale.min, xMax = xScale.max;
-		const left = Math.max(9, xMin);
-		const right = Math.min(16.5, xMax); // 16.5 = 16:30
+			// chỉ hiện 06:00–16:30
+			if (hour < 6 || hour > 16.5) continue;
 
-		if (right <= left) return;
+			const val = raw.y;
+			if (!Number.isFinite(val)) continue;
 
-		const x1 = xScale.getPixelForValue(left);
-		const x2 = xScale.getPixelForValue(right);
+			const x = ptModel.x;
+			const y = ptModel.y;
 
-		ctx.save();
-		ctx.fillStyle = "rgba(0, 145, 181, 0.15)"; // xanh nhạt, trong suốt
-		ctx.fillRect(x1, chartArea.top, x2 - x1, chartArea.bottom - chartArea.top);
-		ctx.restore();
-	  }
-	};
+			// đẩy nhãn lên trên điểm một chút, tránh trùng
+			const yLabel = Math.min(y, chartArea.bottom - 2) - 6;
+			ctx.fillText(val.toFixed(2), x, yLabel);
+		  }
+		  ctx.restore();
+		}
+	  };
 
 	  const tideCtx = cv1.getContext("2d");
 	  new Chart(tideCtx, {
@@ -366,12 +386,12 @@ function render() {
 		  datasets: [
 			{
 			  label: "Tide (m)",
-			  data: dataPts,          // [{x: hourFloat, y: value}]
+			  data: dataPts,
 			  parsing: false,
-			  borderColor: "#00ffff",
-			  borderWidth: 1,
-			  pointRadius: 2,
-			  tension: 0              // đường thẳng, không cong 79c0ff
+			  borderColor: "#79c0ff",
+			  borderWidth: 2,
+			  pointRadius: 3,
+			  tension: 0 // đường thẳng
 			}
 		  ]
 		},
@@ -399,30 +419,33 @@ function render() {
 			  }
 			},
 			y: {
+			  min: yMin,
+			  max: yMax,
 			  ticks: {
+				stepSize: stepY,       // grid mỗi 0.2 m
 				font: { size: 10 },
-				color: "#ce9178",
+				color: "#8b9aa6",      // nhạt hơn
 				padding: 3,
-				// Hiển thị 1 chữ số thập phân
-				callback: (v) => (Number.isFinite(v) ? (Math.round(v * 10) / 10).toFixed(1) : v)
+				// chỉ hiện -0.4 và 0.4, còn lại để trống
+				callback: (v) => (Math.abs(v + 0.4) < 1e-9 ? "-0.4" : (Math.abs(v - 0.4) < 1e-9 ? "0.4" : ""))
 			  },
 			  grid: {
-				color: (ctx) => (ctx.tick && Math.abs(ctx.tick.value) < 1e-9 ? "#2a2f36" : "#1b2229")
-			  },
-			  afterBuildTicks: (scale) => {
-				// đặt ticks "thưa & đẹp", luôn có 0
-				scale.ticks = yTicksValues.map(val => ({ value: val }));
-				scale.min = yTicksValues[0];
-				scale.max = yTicksValues[yTicksValues.length - 1];
+				// nhạt hơn, và có thể nhấn nhẹ đường y=0 cho dễ nhìn
+				color: (ctx) => {
+				  const val = ctx.tick && ctx.tick.value;
+				  if (Math.abs(val) < 1e-9) return "#273039"; // đường 0 hơi đậm hơn 1 chút
+				  return "#222a31";
+				}
 			  }
 			}
 		  },
 		  plugins: {
 			legend: { display: false },
-			shade0916: {}
+			shade091630: {},
+			pointValueLabels: {}
 		  }
 		},
-		plugins: [shade0916]
+		plugins: [shade091630, pointValueLabels]
 	  });
 	})();
 
