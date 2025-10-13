@@ -335,25 +335,29 @@ function render() {
 		yTicksValues.sort((a, b) => a - b);
 	  }
 
-	  // Plugin highlight khung 09:00–16:00 (giữ như yêu cầu ban đầu)
-	  const shade0916 = {
-		id: "shade0916",
-		beforeDraw(chart) {
-		  const { ctx, chartArea, scales } = chart;
-		  const xScale = scales.x;
-		  if (!xScale) return;
-		  const xMin = xScale.min, xMax = xScale.max;
-		  const left = Math.max(9, xMin);
-		  const right = Math.min(16, xMax);
-		  if (right <= left) return;
-		  const x1 = xScale.getPixelForValue(left);
-		  const x2 = xScale.getPixelForValue(right);
-		  ctx.save();
-		  ctx.fillStyle = "rgba(255, 223, 128, 0.15)";
-		  ctx.fillRect(x1, chartArea.top, x2 - x1, chartArea.bottom - chartArea.top);
-		  ctx.restore();
-		}
-	  };
+	// Plugin highlight khung 09:00–16:30
+	const shade0916 = {
+	  id: "shade0916",
+	  beforeDraw(chart) {
+		const { ctx, chartArea, scales } = chart;
+		const xScale = scales.x;
+		if (!xScale) return;
+
+		const xMin = xScale.min, xMax = xScale.max;
+		const left = Math.max(9, xMin);
+		const right = Math.min(16.5, xMax); // 16.5 = 16:30
+
+		if (right <= left) return;
+
+		const x1 = xScale.getPixelForValue(left);
+		const x2 = xScale.getPixelForValue(right);
+
+		ctx.save();
+		ctx.fillStyle = "rgba(0, 145, 181, 0.15)"; // xanh nhạt, trong suốt
+		ctx.fillRect(x1, chartArea.top, x2 - x1, chartArea.bottom - chartArea.top);
+		ctx.restore();
+	  }
+	};
 
 	  const tideCtx = cv1.getContext("2d");
 	  new Chart(tideCtx, {
@@ -364,10 +368,10 @@ function render() {
 			  label: "Tide (m)",
 			  data: dataPts,          // [{x: hourFloat, y: value}]
 			  parsing: false,
-			  borderColor: "#79c0ff",
-			  borderWidth: 2,
-			  pointRadius: 3,
-			  tension: 0              // đường thẳng, không cong
+			  borderColor: "#00ffff",
+			  borderWidth: 1,
+			  pointRadius: 2,
+			  tension: 0              // đường thẳng, không cong 79c0ff
 			}
 		  ]
 		},
