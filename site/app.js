@@ -31,7 +31,7 @@
     if (btn) btn.addEventListener("click", onLoginClick);
     else console.warn("[login] btnLogin not found — kiểm tra id trong index.html");
 
-    // Debug bypass nếu cần:
+    // Debug bypass (nếu cần):
     // document.getElementById("login")?.classList.add("hidden");
     // document.getElementById("app")?.classList.remove("hidden"); init();
   }
@@ -114,7 +114,7 @@ function drawLine(canvas, points, opts) {
     ctx.lineTo(cssW - padR, yy);
     ctx.strokeStyle = "#1b2229";
     ctx.stroke();
-    ctx.fillText(isFinite(v) ? v.toFixed(2) : "–", 4, yy + 3);
+    ctx.fillText(v.toFixed(2), 4, yy + 3);
   });
 
   // Trục X (nhãn cyan)
@@ -161,19 +161,15 @@ async function init() {
     page = Math.max(0, Math.ceil(ALL.length / PAGE_SIZE) - 1);
 
     // Điều hướng
-    const btnPrev = document.getElementById("prev");
-    const btnNext = document.getElementById("next");
-    if (btnPrev)
-      btnPrev.onclick = () => {
-        page = Math.max(0, page - 1);
-        render();
-      };
-    if (btnNext)
-      btnNext.onclick = () => {
-        const last = Math.max(0, Math.ceil(ALL.length / PAGE_SIZE) - 1);
-        page = Math.min(last, page + 1);
-        render();
-      };
+    document.getElementById("prev").onclick = () => {
+      page = Math.max(0, page - 1);
+      render();
+    };
+    document.getElementById("next").onclick = () => {
+      const last = Math.max(0, Math.ceil(ALL.length / PAGE_SIZE) - 1);
+      page = Math.min(last, page + 1);
+      render();
+    };
 
     render();
     window.addEventListener("resize", () => render());
@@ -192,9 +188,11 @@ function render() {
   const slice = ALL.slice(start, start + PAGE_SIZE);
 
   grid.innerHTML = "";
-  pageInfo.textContent = `Trang ${page + 1} / ${last + 1} • Tổng ngày: ${ALL.length}`;
+  pageInfo.textContent = `Trang ${page + 1} / ${last + 1} • Tổng ngày: ${
+    ALL.length
+  }`;
 
-  // Chuẩn bị mốc "hôm nay" (00:00 local)
+  // === Thêm: mốc "hôm nay" (00:00 local) để tính nhãn Forecast, KHÔNG dùng d.is_forecast
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -205,7 +203,7 @@ function render() {
     // Header ngày
     const wd = wdNameShort(d.vietnam_date);
 
-    // Tự tính "Forecast" theo ngày local (>= hôm nay), KHÔNG dùng d.is_forecast
+    // === Thêm: tự tính isForecast theo ngày (>= hôm nay), thay cho d.is_forecast
     const [dd, MM, yyyy] = d.vietnam_date.split("/").map(Number);
     const dDate = new Date(yyyy, MM - 1, dd);
     dDate.setHours(0, 0, 0, 0);
@@ -239,10 +237,50 @@ function render() {
         const h = x.height ?? x.h;
         return { x: new Date(t), y: num(h), label: toHM(t) };
       })
-      .filter((p) => p.y !== null && !Number.isNaN(p.x.getTime()))
+      .filter((p) => p.y !== null)
       .sort((a, b) => a.x - b.x);
-
-    drawLine(cv1, tidePts, { stroke: "#79c0ff" });
+	// ----- Chart thủy triều (Chart.js) -----
+	const tideCtx = cv1.getContext("2d");
+	new Chart(tideCtx, {
+	  type: "line",
+	  data: {
+		datasets: [
+		  {
+			label: "Tide (m)",
+			data: tidePts.map(p => ({ x: p.x.getHours() + p.x.getMinutes()/60, y: p.y })),
+			parsing: false,
+			borderColor: "#79c0ff",
+			borderWidth: 2,
+			pointRadius: 3,
+			tension: 0.3,
+		  },
+		],
+	  },
+	  options: {
+		animation: false,
+		responsive: false,
+		maintainAspectRatio: false,
+		scales: {
+		  x: {
+			type: "linear",
+			min: 0,
+			max: 24,
+			ticks: {
+			  stepSize: 3,
+			  callback: (v) => `${v}:00`,
+			  color: "#9cdcfe",
+			},
+			grid: { color: "#1b2229" },
+		  },
+		  y: {
+			beginAtZero: false,
+			ticks: { color: "#ce9178" },
+			grid: { color: "#1b2229" },
+		  },
+		},
+		plugins: { legend: { display: false } },
+	  },
+	});
 
     // PRESSURE chart
     const wrap2 = document.createElement("div");
@@ -260,10 +298,50 @@ function render() {
         const v = x.pressure ?? x.p;
         return { x: new Date(t), y: num(v), label: toHM(t) };
       })
-      .filter((p) => p.y !== null && !Number.isNaN(p.x.getTime()))
+      .filter((p) => p.y !== null)
       .sort((a, b) => a.x - b.x);
-
-    drawLine(cv2, presPts, { stroke: "#d2a8ff" });
+	// ----- Chart áp suất (Chart.js) -----
+	const presCtx = cv2.getContext("2d");
+	new Chart(presCtx, {
+	  type: "line",
+	  data: {
+		datasets: [
+		  {
+			label: "Pressure (hPa)",
+			data: presPts.map(p => ({ x: p.x.getHours() + p.x.getMinutes()/60, y: p.y })),
+			parsing: false,
+			borderColor: "#d2a8ff",
+			borderWidth: 2,
+			pointRadius: 2,
+			tension: 0.3,
+		  },
+		],
+	  },
+	  options: {
+		animation: false,
+		responsive: false,
+		maintainAspectRatio: false,
+		scales: {
+		  x: {
+			type: "linear",
+			min: 0,
+			max: 24,
+			ticks: {
+			  stepSize: 3,
+			  callback: (v) => `${v}:00`,
+			  color: "#9cdcfe",
+			},
+			grid: { color: "#1b2229" },
+		  },
+		  y: {
+			beginAtZero: false,
+			ticks: { color: "#ce9178" },
+			grid: { color: "#1b2229" },
+		  },
+		},
+		plugins: { legend: { display: false } },
+	  },
+	});
 
     // HYDRO info line (giá trị ngày + trung bình nhiều năm — hardcode)
     const hydro = document.createElement("div");
