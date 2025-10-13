@@ -333,7 +333,7 @@ function render() {
 		  const x2 = xScale.getPixelForValue(right);
 
 		  ctx.save();
-		  ctx.fillStyle = "rgba(255, 223, 128, 0.15)";
+		  ctx.fillStyle = "rgba(0, 145, 181, 0.15)"; // xanh nhạt, trong suốt
 		  ctx.fillRect(x1, chartArea.top, x2 - x1, chartArea.bottom - chartArea.top);
 		  ctx.restore();
 		}
@@ -388,9 +388,9 @@ function render() {
 			  label: "Tide (m)",
 			  data: dataPts,
 			  parsing: false,
-			  borderColor: "#79c0ff",
-			  borderWidth: 2,
-			  pointRadius: 3,
+			  borderColor: "#00ffff",
+			  borderWidth: 1,
+			  pointRadius: 2,
 			  tension: 0 // đường thẳng
 			}
 		  ]
