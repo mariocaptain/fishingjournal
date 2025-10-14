@@ -222,8 +222,7 @@ def aggregate_to_days(tides, hours, days):
         tidal = tide_by.get(ds, [])
         pres_series = [p for p in gg.get("pres", []) if p["pressure"] is not None]
 
-        if len(tidal) == 0 and len(pres_series) < 2:
-            # ngày rỗng/biên dải — bỏ
+        if len(tidal) == 0 and len(pres_series) < 8:
             continue
 
         sea = r2(_mean(gg.get("sl", [])))
