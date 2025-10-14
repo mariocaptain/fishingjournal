@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-import os, json, math, traceback, ast
+import os, json, math, ast, traceback
 from datetime import datetime, timedelta, timezone, date
 from dateutil import tz
 import pandas as pd
 import requests
 
-# ===== Config =====
-# Đồng bộ tọa độ với bản PC
+# =========================
+# Config cố định (đúng theo thỏa thuận)
+# =========================
 LAT, LON = 16.224044, 108.084327
 LOCAL_TZ = tz.gettz("Asia/Ho_Chi_Minh")
 
@@ -24,11 +25,15 @@ SG_KEYS = [os.getenv("STORMGLASS_KEY_1",""),
            os.getenv("STORMGLASS_KEY_2",""),
            os.getenv("STORMGLASS_KEY_3","")]
 
-REQ_COLS = ["Vietnam Date","Lunar Date","Tidal Data","Pressure Data",
-            "Sea Level","Water Temperature","Wind Speed","Wind Direction","Wave Height",
-            "App Fishing Score","User Fishing Score","Fish Caught","User Notes","Pressure"]
+REQ_COLS = [
+    "Vietnam Date","Lunar Date","Tidal Data","Pressure Data",
+    "Sea Level","Water Temperature","Wind Speed","Wind Direction","Wave Height",
+    "App Fishing Score","User Fishing Score","Fish Caught","User Notes","Pressure"
+]
 
-# ===== Time helpers =====
+# =========================
+# Helpers về thời gian & số
+# =========================
 def today_local() -> date:
     return datetime.now(LOCAL_TZ).date()
 
@@ -38,12 +43,13 @@ def ddmmyyyy(d: date) -> str:
 def parse_ddmmyyyy(s: str) -> date:
     return datetime.strptime(s.strip(), "%d/%m/%Y").date()
 
-def to_utc_iso(dt_local: datetime) -> str:
+def to_utc_epoch(dt_local: datetime) -> int:
     if dt_local.tzinfo is None:
         dt_local = dt_local.replace(tzinfo=LOCAL_TZ)
-    return dt_local.astimezone(timezone.utc).isoformat()
+    return int(dt_local.astimezone(timezone.utc).timestamp())
 
 def iso_to_local(iso):
+    # Stormglass trả ISO kết thúc 'Z'
     if isinstance(iso, str) and iso.endswith("Z"):
         iso = iso[:-1] + "+00:00"
     return datetime.fromisoformat(iso).astimezone(LOCAL_TZ).isoformat()
@@ -53,7 +59,6 @@ def iso_to_ddmmyyyy(iso):
         iso = iso[:-1] + "+00:00"
     return datetime.fromisoformat(iso).astimezone(LOCAL_TZ).strftime("%d/%m/%Y")
 
-# ===== Lunar (fallback nếu thiếu lib) =====
 def lunar_ddmm(d: date) -> str:
     try:
         from lunarcalendar import Converter, Solar
@@ -63,15 +68,28 @@ def lunar_ddmm(d: date) -> str:
     except Exception:
         return f"{d.day:02d}/{d.month:02d}"
 
-# ===== CSV IO =====
-def load_hist():
+def r2(x):
+    try:
+        if x is None:
+            return None
+        fx = float(x)
+        if not math.isfinite(fx):
+            return None
+        return round(fx, 2)
+    except:
+        return None
+
+# =========================
+# CSV I/O và cắt lịch sử
+# =========================
+def load_hist() -> pd.DataFrame:
     if not os.path.exists(HISTORY_CSV):
         return pd.DataFrame(columns=REQ_COLS)
     df = pd.read_csv(HISTORY_CSV, dtype=str, keep_default_na=False).fillna("")
     for c in REQ_COLS:
         if c not in df.columns:
             df[c] = ""
-    # Chuẩn hoá & cắt mọi dòng > hôm qua
+    # cắt mọi dòng > hôm qua
     try:
         df["_d"] = df["Vietnam Date"].apply(parse_ddmmyyyy)
     except:
@@ -87,115 +105,105 @@ def save_hist(df: pd.DataFrame):
     df = df[(df["_d"] <= (today_local() - timedelta(days=1)))].sort_values("_d").drop(columns=["_d"])
     df.to_csv(HISTORY_CSV, index=False)
 
-def missing_dates(df: pd.DataFrame):
-    # chỉ bù tới hôm qua (không đụng hôm nay, hôm qua sẽ còn được ghi đè ở bước "cửa sổ cập nhật")
-    end = today_local() - timedelta(days=1)
-    if df.empty:
-        start = end - timedelta(days=7)
-    else:
-        try:
-            start = df["Vietnam Date"].apply(parse_ddmmyyyy).max() + timedelta(days=1)
-        except:
-            start = end - timedelta(days=7)
-    if start > end:
-        return []
-    cur, out = start, []
-    while cur <= end:
-        out.append(cur)
-        cur += timedelta(days=1)
-    return out
-
-# ===== HTTP =====
+# =========================
+# Stormglass HTTP
+# =========================
 def sg_get(path, params):
-    last = ""
+    last_err = ""
     for i, key in enumerate([k for k in SG_KEYS if k]):
         try:
             r = requests.get(SG_BASE + path, headers={"Authorization": key}, params=params, timeout=45)
             if r.status_code == 200:
                 return r.json()
-            last = f"[Key#{i+1}] HTTP {r.status_code}: {r.text[:200]}"
+            last_err = f"[Key#{i+1}] HTTP {r.status_code}: {r.text[:200]}"
         except Exception as e:
-            last = f"[Key#{i+1}] {e}"
-    raise RuntimeError(last or "No API key")
+            last_err = f"[Key#{i+1}] {e}"
+    raise RuntimeError(last_err or "No Stormglass API key configured")
 
-# ===== Fetchers =====
-def fetch_tide(start_d: date, end_d: date):
-    sdt = datetime.combine(start_d, datetime.min.time()).replace(tzinfo=LOCAL_TZ)
-    edt = datetime.combine(end_d, datetime.max.time()).replace(tzinfo=LOCAL_TZ)
-    j = sg_get("/tide/extremes/point", {"lat": LAT, "lng": LON, "start": to_utc_iso(sdt), "end": to_utc_iso(edt)})
-    return j.get("data", [])
+# =========================
+# “CHIẾN THUẬT CHIA NHỎ” — y hệt lap_an_fishing_journal.py
+# - Gọi theo block 10 ngày liên tiếp
+# - Tổng hợp kết quả
+# =========================
+def fetch_tide_range(start_d: date, end_d: date):
+    url = "/tide/extremes/point"
+    out = []
+    cur = start_d
+    # block 10 ngày
+    while cur <= end_d:
+        block_end = min(end_d, cur + timedelta(days=9))
+        sdt = datetime.combine(cur, datetime.min.time()).replace(tzinfo=LOCAL_TZ)
+        edt = datetime.combine(block_end, datetime.max.time()).replace(tzinfo=LOCAL_TZ)
+        j = sg_get(url, {
+            "lat": LAT, "lng": LON,
+            "start": to_utc_epoch(sdt),
+            "end": to_utc_epoch(edt)
+        })
+        out.extend(j.get("data", []))
+        cur = block_end + timedelta(days=1)
+    return out
 
-def fetch_weather(start_d: date, end_d: date):
-    sdt = datetime.combine(start_d, datetime.min.time()).replace(tzinfo=LOCAL_TZ)
-    edt = datetime.combine(end_d, datetime.max.time()).replace(tzinfo=LOCAL_TZ)
-    params = "pressure,waterTemperature,windSpeed,windDirection,waveHeight,seaLevel"
-    # Đổi source -> sg để có seaLevel và đồng bộ bản PC
-    j = sg_get("/weather/point", {
-        "lat": LAT, "lng": LON, "params": params,
-        "source": "sg", "start": to_utc_iso(sdt), "end": to_utc_iso(edt)
-    })
-    return j.get("hours", [])
+def fetch_weather_range(start_d: date, end_d: date):
+    url = "/weather/point"
+    out = []
+    cur = start_d
+    params_names = "pressure,seaLevel,waterTemperature,windSpeed,windDirection,waveHeight"
+    while cur <= end_d:
+        block_end = min(end_d, cur + timedelta(days=9))
+        sdt = datetime.combine(cur, datetime.min.time()).replace(tzinfo=LOCAL_TZ)
+        edt = datetime.combine(block_end, datetime.max.time()).replace(tzinfo=LOCAL_TZ)
+        j = sg_get(url, {
+            "lat": LAT, "lng": LON,
+            "params": params_names,
+            "start": to_utc_epoch(sdt),
+            "end": to_utc_epoch(edt),
+            "source": "sg"  # đồng bộ bản PC
+        })
+        out.extend(j.get("hours", []))
+        cur = block_end + timedelta(days=1)
+    return out
 
-# ===== Aggregations =====
-def mean(vals):
-    arr = [float(v) for v in vals if v is not None and math.isfinite(float(v))]
-    return sum(arr)/len(arr) if arr else None
-
-def circular_mean_deg(deg_list):
-    arr = [float(v) for v in deg_list if v is not None and math.isfinite(float(v))]
+# =========================
+# Gom nhóm & tính toán
+# =========================
+def circ_mean_deg(deg_list):
+    arr = [float(v) for v in deg_list if v is not None]
     if not arr:
         return None
-    # trung bình vector trên vòng tròn
-    import math as _m
-    s = sum(_m.sin(_m.radians(x)) for x in arr)
-    c = sum(_m.cos(_m.radians(x)) for x in arr)
-    ang = _m.degrees(_m.atan2(s, c))
+    s = sum(math.sin(math.radians(x)) for x in arr)
+    c = sum(math.cos(math.radians(x)) for x in arr)
+    ang = math.degrees(math.atan2(s, c))
     if ang < 0:
         ang += 360.0
     return ang
 
-def r2(x):
-    """Round to 2 decimals like PC; None remains None."""
-    try:
-        if x is None:
-            return None
-        fx = float(x)
-        if not math.isfinite(fx):
-            return None
-        return round(fx, 2)
-    except:
-        return None
-
-def aggregate_hours(tides, hours):
-    # TIDE: giữ nguyên cấu trúc, nhưng height làm tròn 2 chữ số như PC
+def aggregate_to_days(tides, hours, days):
+    # 1) TIDE: theo ngày, làm tròn 2 chữ số cho height
     tide_by = {}
-    for x in tides:
-        d = iso_to_ddmmyyyy(x["time"])
-        h = r2(x.get("height"))
-        tide_by.setdefault(d, []).append({
-            "time": iso_to_local(x["time"]),
-            "height": h,
-            "type": x.get("type")
+    for t in tides:
+        ds = iso_to_ddmmyyyy(t["time"])
+        tide_by.setdefault(ds, []).append({
+            "time": iso_to_local(t["time"]),
+            "height": r2(t.get("height")),
+            "type": t.get("type")
         })
 
-    # WEATHER: lấy toàn bộ giờ, source=sg, pressure series + các mảng mean
+    # 2) WEATHER: pick source 'sg'; lấy tất cả giờ
     g = {}
     for h in hours:
-        d = iso_to_ddmmyyyy(h["time"])
+        ds = iso_to_ddmmyyyy(h["time"])
         def pick(name):
             v = h.get(name)
-            # các trường ở weather trả về dict theo source; chọn 'sg'
             v = v.get("sg") if isinstance(v, dict) else v
             try:
-                f = float(v)
-                return f if math.isfinite(f) else None
+                fv = float(v)
+                return fv if math.isfinite(fv) else None
             except:
                 return None
 
-        rec = g.setdefault(d, {"wt": [], "ws": [], "wd": [], "wh": [], "sl": [], "pres_series": []})
-        # pressure series: lưu toàn bộ giờ, làm tròn 2 chữ số
+        rec = g.setdefault(ds, {"wt": [], "ws": [], "wd": [], "wh": [], "sl": [], "pres": []})
         p = pick("pressure")
-        rec["pres_series"].append({
+        rec["pres"].append({
             "time": iso_to_local(h["time"]),
             "pressure": r2(p)
         })
@@ -205,26 +213,24 @@ def aggregate_hours(tides, hours):
         rec["wh"].append(pick("waveHeight"))
         rec["sl"].append(pick("seaLevel"))
 
-    return tide_by, g
-
-def build_rows_for_days(days, tide_by, g):
+    # 3) Build rows, bỏ ngày “biên dải” không đầy đủ:
+    #    - nếu KHÔNG có tide và pressure < 2 điểm ⇒ bỏ qua (để lần ETL sau tự lấp)
     out = []
     for d in days:
         ds = ddmmyyyy(d)
         gg = g.get(ds, {})
-        sea = r2(mean(gg.get("sl", [])))
-        wt  = r2(mean(gg.get("wt", [])))
-        ws  = r2(mean(gg.get("ws", [])))
-        wd  = r2(circular_mean_deg(gg.get("wd", [])))
-        wh  = r2(mean(gg.get("wh", [])))
-        # chỉ giữ các điểm pressure có giá trị (đã làm tròn ở aggregate_hours)
-        pres_series = [p for p in gg.get("pres_series", []) if p["pressure"] is not None]
         tidal = tide_by.get(ds, [])
+        pres_series = [p for p in gg.get("pres", []) if p["pressure"] is not None]
 
-        # **Bỏ ngày rỗng**: nếu không có tide và không có bất kỳ dữ liệu weather nào
-        all_means_none = (sea is None and wt is None and ws is None and wd is None and wh is None)
-        if len(tidal) == 0 and len(pres_series) == 0 and all_means_none:
+        if len(tidal) == 0 and len(pres_series) < 2:
+            # ngày rỗng/biên dải — bỏ
             continue
+
+        sea = r2(_mean(gg.get("sl", [])))
+        wt  = r2(_mean(gg.get("wt", [])))
+        ws  = r2(_mean(gg.get("ws", [])))
+        wd  = r2(circ_mean_deg(gg.get("wd", [])))
+        wh  = r2(_mean(gg.get("wh", [])))
 
         out.append({
             "vietnam_date": ds,
@@ -239,9 +245,14 @@ def build_rows_for_days(days, tide_by, g):
         })
     return out
 
-# ===== Export site/data.json =====
+def _mean(vals):
+    arr = [float(v) for v in vals if v is not None and math.isfinite(float(v))]
+    return sum(arr)/len(arr) if arr else None
+
+# =========================
+# Ghi site/data.json
+# =========================
 def export_json(hist_df: pd.DataFrame, window_rows, window_start: date):
-    # helper parse list repr từ CSV về list python
     def parse_list(s):
         if not s:
             return []
@@ -250,7 +261,7 @@ def export_json(hist_df: pd.DataFrame, window_rows, window_start: date):
         except:
             return []
 
-    # 1) lấy lịch sử cho các ngày < window_start (tức trước hôm qua)
+    # Lịch sử trước cửa sổ
     items = []
     for _, r in hist_df.iterrows():
         d = parse_ddmmyyyy(r["Vietnam Date"])
@@ -267,7 +278,7 @@ def export_json(hist_df: pd.DataFrame, window_rows, window_start: date):
                 "wave_height": float(r["Wave Height"]) if r["Wave Height"] else None
             })
 
-    # 2) “ghi đè” cửa sổ [hôm qua .. hôm nay+10]
+    # Ghi đè theo cửa sổ [hôm qua .. hôm nay+10]
     by_day = {it["vietnam_date"]: it for it in items}
     for it in window_rows or []:
         by_day[it["vietnam_date"]] = it
@@ -279,26 +290,38 @@ def export_json(hist_df: pd.DataFrame, window_rows, window_start: date):
             f, ensure_ascii=False, indent=2
         )
 
-# ===== Main =====
+# =========================
+# Luồng chính
+# =========================
 def main():
     try:
-        # 1) Load history & đảm bảo không có dòng > hôm qua
+        # 1) Load & enforce trim tới hôm qua
         df = load_hist()
-        save_hist(df)  # re-save to enforce trim
+        save_hist(df)
+        df = load_hist()
 
-        # 2) Bù các ngày thiếu (chỉ đến hôm qua), tải dữ liệu và append
-        dates_to_fill = missing_dates(df)
-        if dates_to_fill:
-            start_fill, end_fill = dates_to_fill[0], dates_to_fill[-1]
-            tides = fetch_tide(start_fill, end_fill)
-            hours = fetch_weather(start_fill, end_fill)
-            tide_by, g = aggregate_hours(tides, hours)
+        # 2) Xác định dải “bù thiếu” từ ngày sau cùng trong CSV tới hôm qua
+        end_backfill = today_local() - timedelta(days=1)
+        if df.empty:
+            # nếu trống, bù 7 ngày gần nhất để có nền dữ liệu
+            start_backfill = end_backfill - timedelta(days=6)
+        else:
+            last = df["Vietnam Date"].apply(parse_ddmmyyyy).max()
+            start_backfill = last + timedelta(days=1)
 
-            # build rows (skip ngày rỗng)
-            rows = build_rows_for_days(dates_to_fill, tide_by, g)
+        if start_backfill <= end_backfill:
+            # dùng CHIẾN THUẬT PC: fetch theo block 10 ngày
+            tides = fetch_tide_range(start_backfill, end_backfill)
+            hours = fetch_weather_range(start_backfill, end_backfill)
+            # build list ngày liên tiếp
+            days = []
+            cur = start_backfill
+            while cur <= end_backfill:
+                days.append(cur)
+                cur += timedelta(days=1)
+            rows = aggregate_to_days(tides, hours, days)
 
             if rows:
-                # append vào history.csv với format/làm tròn giống PC (2 chữ số)
                 add = pd.DataFrame([{
                     "Vietnam Date": r["vietnam_date"],
                     "Lunar Date": r["lunar_date"],
@@ -317,21 +340,20 @@ def main():
                 } for r in rows])
                 df = pd.concat([df, add], ignore_index=True)
                 save_hist(df)
-                df = load_hist()  # reload to ensure trimmed/sorted
+                df = load_hist()
 
-        # 3) Cửa sổ cập nhật: hôm qua .. hôm nay+10 (bao gồm cả hôm qua để ghi đè vào data.json)
+        # 3) Cửa sổ JSON: hôm qua .. hôm nay+10
         start_win = today_local() - timedelta(days=1)
         end_win = today_local() + timedelta(days=10)
-        tides = fetch_tide(start_win, end_win)
-        hours = fetch_weather(start_win, end_win)
-        tide_by, g = aggregate_hours(tides, hours)
-
+        tides = fetch_tide_range(start_win, end_win)
+        hours = fetch_weather_range(start_win, end_win)
+        # xây list ngày cửa sổ
         days = []
         cur = start_win
         while cur <= end_win:
             days.append(cur)
             cur += timedelta(days=1)
-        window_rows = build_rows_for_days(days, tide_by, g)
+        window_rows = aggregate_to_days(tides, hours, days)
 
         export_json(df, window_rows, start_win)
         print(f"[OK] history={len(df)} window_rows={len(window_rows)} → {SITE_JSON}")
