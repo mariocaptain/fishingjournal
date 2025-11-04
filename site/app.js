@@ -145,7 +145,7 @@ async function init() {
   const pageInfo = document.getElementById("pageInfo");
 
   try {
-    const r = await fetch("./data.json", { cache: "no-store" });
+    const r = await fetch(./site/data.json?ts=${Date.now()}, { cache: "no-store" });
     const j = await r.json();
 
     if (j && j.error) {
