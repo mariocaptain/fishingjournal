@@ -28,6 +28,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # === NEW: tự bump version cho CSS/JS để tránh cache ===
+      - name: Bump asset version in index.html
+        run: |
+          VER=${GITHUB_SHA::7}
+          echo "Using VER=$VER"
+          sed -i "s/styles.css?v=[^\"']*/styles.css?v=$VER/g" site/index.html
+          sed -i "s/app.js?v=[^\"']*/app.js?v=$VER/g" site/index.html
+          echo "Patched lines:"
+          grep -n "styles.css?v\|app.js?v" site/index.html
+
       - name: Upload artifact (site/)
         uses: actions/upload-pages-artifact@v3
         with:
