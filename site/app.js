@@ -145,7 +145,10 @@ async function init() {
   const pageInfo = document.getElementById("pageInfo");
 
   try {
-    const r = await fetch(`./data.json?ts=${Date.now()}`, { cache: "no-store" });
+	const r = await fetch(
+	  `https://raw.githubusercontent.com/mariocaptain/fishingjournal/main/site/data.json?ts=${Date.now()}`,
+	  { cache: "no-store" }
+	);
     const j = await r.json();
 
     if (j && j.error) {
