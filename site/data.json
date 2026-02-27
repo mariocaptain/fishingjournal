@@ -1,7 +1,7 @@
 {
   "meta": {
-    "generated_at": "2026-02-27T02:38:49.176218+07:00",
-    "rows": 1133
+    "generated_at": "2026-02-28T02:28:42.256833+07:00",
+    "rows": 1134
   },
   "days": [
     {
@@ -79725,86 +79725,86 @@
         },
         {
           "time": "2026-02-27T05:00:00+07:00",
-          "pressure": 983.35
+          "pressure": 983.3
         },
         {
           "time": "2026-02-27T06:00:00+07:00",
-          "pressure": 983.86
+          "pressure": 983.76
         },
         {
           "time": "2026-02-27T07:00:00+07:00",
-          "pressure": 984.37
+          "pressure": 984.22
         },
         {
           "time": "2026-02-27T08:00:00+07:00",
-          "pressure": 984.86
+          "pressure": 984.81
         },
         {
           "time": "2026-02-27T09:00:00+07:00",
-          "pressure": 985.35
+          "pressure": 985.41
         },
         {
           "time": "2026-02-27T10:00:00+07:00",
-          "pressure": 985.83
+          "pressure": 986.0
         },
         {
           "time": "2026-02-27T11:00:00+07:00",
-          "pressure": 985.03
+          "pressure": 985.36
         },
         {
           "time": "2026-02-27T12:00:00+07:00",
-          "pressure": 984.23
+          "pressure": 984.72
         },
         {
           "time": "2026-02-27T13:00:00+07:00",
-          "pressure": 983.42
+          "pressure": 984.07
         },
         {
           "time": "2026-02-27T14:00:00+07:00",
-          "pressure": 982.87
+          "pressure": 983.24
         },
         {
           "time": "2026-02-27T15:00:00+07:00",
-          "pressure": 982.32
+          "pressure": 982.41
         },
         {
           "time": "2026-02-27T16:00:00+07:00",
-          "pressure": 981.76
+          "pressure": 981.57
         },
         {
           "time": "2026-02-27T17:00:00+07:00",
-          "pressure": 982.05
+          "pressure": 982.12
         },
         {
           "time": "2026-02-27T18:00:00+07:00",
-          "pressure": 982.34
+          "pressure": 982.66
         },
         {
           "time": "2026-02-27T19:00:00+07:00",
-          "pressure": 982.63
+          "pressure": 983.21
         },
         {
           "time": "2026-02-27T20:00:00+07:00",
-          "pressure": 982.86
+          "pressure": 983.31
         },
         {
           "time": "2026-02-27T21:00:00+07:00",
-          "pressure": 983.09
+          "pressure": 983.41
         },
         {
           "time": "2026-02-27T22:00:00+07:00",
-          "pressure": 983.32
+          "pressure": 983.5
         },
         {
           "time": "2026-02-27T23:00:00+07:00",
-          "pressure": 982.97
+          "pressure": 983.08
         }
       ],
       "sea_level": 0.7,
-      "water_temperature": 25.06,
-      "wind_speed": 1.45,
-      "wind_direction": 166.54,
-      "wave_height": 0.69
+      "water_temperature": 24.84,
+      "wind_speed": 1.5,
+      "wind_direction": 151.72,
+      "wave_height": 0.73
     },
     {
       "vietnam_date": "28/02/2026",
@@ -79834,106 +79834,106 @@
       "pressure_data": [
         {
           "time": "2026-02-28T00:00:00+07:00",
-          "pressure": 982.62
+          "pressure": 982.65
         },
         {
           "time": "2026-02-28T01:00:00+07:00",
-          "pressure": 982.26
+          "pressure": 982.23
         },
         {
           "time": "2026-02-28T02:00:00+07:00",
-          "pressure": 981.97
+          "pressure": 982.09
         },
         {
           "time": "2026-02-28T03:00:00+07:00",
-          "pressure": 981.68
+          "pressure": 981.94
         },
         {
           "time": "2026-02-28T04:00:00+07:00",
-          "pressure": 981.39
+          "pressure": 981.8
         },
         {
           "time": "2026-02-28T05:00:00+07:00",
-          "pressure": 982.1
+          "pressure": 982.43
         },
         {
           "time": "2026-02-28T06:00:00+07:00",
-          "pressure": 982.8
+          "pressure": 983.06
         },
         {
           "time": "2026-02-28T07:00:00+07:00",
-          "pressure": 983.5
-        },
-        {
-          "time": "2026-02-28T08:00:00+07:00",
-          "pressure": 983.85
-        },
-        {
-          "time": "2026-02-28T09:00:00+07:00",
-          "pressure": 984.19
-        },
-        {
-          "time": "2026-02-28T10:00:00+07:00",
-          "pressure": 984.54
-        },
-        {
-          "time": "2026-02-28T11:00:00+07:00",
           "pressure": 983.69
         },
         {
+          "time": "2026-02-28T08:00:00+07:00",
+          "pressure": 984.05
+        },
+        {
+          "time": "2026-02-28T09:00:00+07:00",
+          "pressure": 984.42
+        },
+        {
+          "time": "2026-02-28T10:00:00+07:00",
+          "pressure": 984.79
+        },
+        {
+          "time": "2026-02-28T11:00:00+07:00",
+          "pressure": 984.16
+        },
+        {
           "time": "2026-02-28T12:00:00+07:00",
-          "pressure": 982.84
+          "pressure": 983.52
         },
         {
           "time": "2026-02-28T13:00:00+07:00",
-          "pressure": 981.99
+          "pressure": 982.89
         },
         {
           "time": "2026-02-28T14:00:00+07:00",
-          "pressure": 981.51
+          "pressure": 982.37
         },
         {
           "time": "2026-02-28T15:00:00+07:00",
-          "pressure": 981.03
+          "pressure": 981.86
         },
         {
           "time": "2026-02-28T16:00:00+07:00",
-          "pressure": 980.54
+          "pressure": 981.34
         },
         {
           "time": "2026-02-28T17:00:00+07:00",
-          "pressure": 981.04
+          "pressure": 981.64
         },
         {
           "time": "2026-02-28T18:00:00+07:00",
-          "pressure": 981.53
+          "pressure": 981.94
         },
         {
           "time": "2026-02-28T19:00:00+07:00",
-          "pressure": 982.02
+          "pressure": 982.24
         },
         {
           "time": "2026-02-28T20:00:00+07:00",
-          "pressure": 982.25
+          "pressure": 982.59
         },
         {
           "time": "2026-02-28T21:00:00+07:00",
-          "pressure": 982.47
+          "pressure": 982.93
         },
         {
           "time": "2026-02-28T22:00:00+07:00",
-          "pressure": 982.69
+          "pressure": 983.27
         },
         {
           "time": "2026-02-28T23:00:00+07:00",
-          "pressure": 982.39
+          "pressure": 982.81
         }
       ],
-      "sea_level": 0.69,
-      "water_temperature": 25.23,
-      "wind_speed": 1.61,
-      "wind_direction": 163.87,
-      "wave_height": 0.76
+      "sea_level": 0.7,
+      "water_temperature": 25.02,
+      "wind_speed": 1.72,
+      "wind_direction": 143.54,
+      "wave_height": 0.79
     },
     {
       "vietnam_date": "01/03/2026",
@@ -79963,105 +79963,105 @@
       "pressure_data": [
         {
           "time": "2026-03-01T00:00:00+07:00",
-          "pressure": 982.09
+          "pressure": 982.35
         },
         {
           "time": "2026-03-01T01:00:00+07:00",
-          "pressure": 981.79
+          "pressure": 981.88
         },
         {
           "time": "2026-03-01T02:00:00+07:00",
-          "pressure": 981.5
+          "pressure": 981.65
         },
         {
           "time": "2026-03-01T03:00:00+07:00",
-          "pressure": 981.2
+          "pressure": 981.41
         },
         {
           "time": "2026-03-01T04:00:00+07:00",
-          "pressure": 980.9
+          "pressure": 981.18
         },
         {
           "time": "2026-03-01T05:00:00+07:00",
-          "pressure": 981.64
+          "pressure": 981.95
         },
         {
           "time": "2026-03-01T06:00:00+07:00",
-          "pressure": 982.38
+          "pressure": 982.71
         },
         {
           "time": "2026-03-01T07:00:00+07:00",
-          "pressure": 983.11
+          "pressure": 983.48
         },
         {
           "time": "2026-03-01T08:00:00+07:00",
-          "pressure": 983.61
+          "pressure": 983.8
         },
         {
           "time": "2026-03-01T09:00:00+07:00",
-          "pressure": 984.1
+          "pressure": 984.12
         },
         {
           "time": "2026-03-01T10:00:00+07:00",
-          "pressure": 984.6
+          "pressure": 984.45
         },
         {
           "time": "2026-03-01T11:00:00+07:00",
-          "pressure": 983.86
+          "pressure": 983.56
         },
         {
           "time": "2026-03-01T12:00:00+07:00",
-          "pressure": 983.12
+          "pressure": 982.68
         },
         {
           "time": "2026-03-01T13:00:00+07:00",
-          "pressure": 982.37
-        },
-        {
-          "time": "2026-03-01T14:00:00+07:00",
-          "pressure": 982.09
-        },
-        {
-          "time": "2026-03-01T15:00:00+07:00",
           "pressure": 981.8
         },
         {
+          "time": "2026-03-01T14:00:00+07:00",
+          "pressure": 981.56
+        },
+        {
+          "time": "2026-03-01T15:00:00+07:00",
+          "pressure": 981.32
+        },
+        {
           "time": "2026-03-01T16:00:00+07:00",
-          "pressure": 981.52
+          "pressure": 981.07
         },
         {
           "time": "2026-03-01T17:00:00+07:00",
-          "pressure": 981.86
+          "pressure": 981.55
         },
         {
           "time": "2026-03-01T18:00:00+07:00",
-          "pressure": 982.2
+          "pressure": 982.03
         },
         {
           "time": "2026-03-01T19:00:00+07:00",
-          "pressure": 982.54
+          "pressure": 982.5
         },
         {
           "time": "2026-03-01T20:00:00+07:00",
-          "pressure": 982.98
+          "pressure": 982.9
         },
         {
           "time": "2026-03-01T21:00:00+07:00",
-          "pressure": 983.41
+          "pressure": 983.3
         },
         {
           "time": "2026-03-01T22:00:00+07:00",
-          "pressure": 983.84
+          "pressure": 983.7
         },
         {
           "time": "2026-03-01T23:00:00+07:00",
-          "pressure": 983.55
+          "pressure": 983.42
         }
       ],
       "sea_level": 0.67,
-      "water_temperature": 25.42,
-      "wind_speed": 1.23,
-      "wind_direction": 159.61,
+      "water_temperature": 25.23,
+      "wind_speed": 1.56,
+      "wind_direction": 143.77,
       "wave_height": 0.78
     },
     {
@@ -80092,55 +80092,55 @@
       "pressure_data": [
         {
           "time": "2026-03-02T00:00:00+07:00",
-          "pressure": 983.26
+          "pressure": 983.14
         },
         {
           "time": "2026-03-02T01:00:00+07:00",
-          "pressure": 982.97
+          "pressure": 982.87
         },
         {
           "time": "2026-03-02T02:00:00+07:00",
-          "pressure": 982.88
+          "pressure": 982.79
         },
         {
           "time": "2026-03-02T03:00:00+07:00",
-          "pressure": 982.8
-        },
-        {
-          "time": "2026-03-02T04:00:00+07:00",
           "pressure": 982.71
         },
         {
+          "time": "2026-03-02T04:00:00+07:00",
+          "pressure": 982.63
+        },
+        {
           "time": "2026-03-02T05:00:00+07:00",
-          "pressure": 983.5
+          "pressure": 983.35
         },
         {
           "time": "2026-03-02T06:00:00+07:00",
-          "pressure": 984.28
+          "pressure": 984.06
         },
         {
           "time": "2026-03-02T07:00:00+07:00",
-          "pressure": 985.07
+          "pressure": 984.78
         },
         {
           "time": "2026-03-02T08:00:00+07:00",
-          "pressure": 985.38
+          "pressure": 985.16
         },
         {
           "time": "2026-03-02T09:00:00+07:00",
-          "pressure": 985.69
+          "pressure": 985.54
         },
         {
           "time": "2026-03-02T10:00:00+07:00",
-          "pressure": 986.0
+          "pressure": 985.92
         },
         {
           "time": "2026-03-02T11:00:00+07:00",
-          "pressure": 985.22
+          "pressure": 985.18
         },
         {
           "time": "2026-03-02T12:00:00+07:00",
-          "pressure": 984.45
+          "pressure": 984.43
         },
         {
           "time": "2026-03-02T13:00:00+07:00",
@@ -80152,46 +80152,46 @@
         },
         {
           "time": "2026-03-02T15:00:00+07:00",
-          "pressure": 982.96
+          "pressure": 982.95
         },
         {
           "time": "2026-03-02T16:00:00+07:00",
-          "pressure": 982.6
+          "pressure": 982.58
         },
         {
           "time": "2026-03-02T17:00:00+07:00",
-          "pressure": 982.79
+          "pressure": 982.83
         },
         {
           "time": "2026-03-02T18:00:00+07:00",
-          "pressure": 982.98
+          "pressure": 983.09
         },
         {
           "time": "2026-03-02T19:00:00+07:00",
-          "pressure": 983.17
+          "pressure": 983.34
         },
         {
           "time": "2026-03-02T20:00:00+07:00",
-          "pressure": 983.59
+          "pressure": 983.68
         },
         {
           "time": "2026-03-02T21:00:00+07:00",
-          "pressure": 984.02
+          "pressure": 984.03
         },
         {
           "time": "2026-03-02T22:00:00+07:00",
-          "pressure": 984.44
+          "pressure": 984.37
         },
         {
           "time": "2026-03-02T23:00:00+07:00",
-          "pressure": 984.27
+          "pressure": 984.14
         }
       ],
       "sea_level": 0.69,
-      "water_temperature": 25.54,
-      "wind_speed": 1.25,
-      "wind_direction": 164.25,
-      "wave_height": 0.7
+      "water_temperature": 25.34,
+      "wind_speed": 1.17,
+      "wind_direction": 162.51,
+      "wave_height": 0.75
     },
     {
       "vietnam_date": "03/03/2026",
@@ -80221,106 +80221,106 @@
       "pressure_data": [
         {
           "time": "2026-03-03T00:00:00+07:00",
-          "pressure": 984.09
+          "pressure": 983.9
         },
         {
           "time": "2026-03-03T01:00:00+07:00",
-          "pressure": 983.91
+          "pressure": 983.66
         },
         {
           "time": "2026-03-03T02:00:00+07:00",
-          "pressure": 983.78
+          "pressure": 983.64
         },
         {
           "time": "2026-03-03T03:00:00+07:00",
-          "pressure": 983.65
+          "pressure": 983.62
         },
         {
           "time": "2026-03-03T04:00:00+07:00",
-          "pressure": 983.52
+          "pressure": 983.59
         },
         {
           "time": "2026-03-03T05:00:00+07:00",
-          "pressure": 984.03
+          "pressure": 984.23
         },
         {
           "time": "2026-03-03T06:00:00+07:00",
-          "pressure": 984.54
+          "pressure": 984.87
         },
         {
           "time": "2026-03-03T07:00:00+07:00",
-          "pressure": 985.05
+          "pressure": 985.5
         },
         {
           "time": "2026-03-03T08:00:00+07:00",
-          "pressure": 985.47
+          "pressure": 985.93
         },
         {
           "time": "2026-03-03T09:00:00+07:00",
-          "pressure": 985.89
+          "pressure": 986.35
         },
         {
           "time": "2026-03-03T10:00:00+07:00",
-          "pressure": 986.31
+          "pressure": 986.78
         },
         {
           "time": "2026-03-03T11:00:00+07:00",
-          "pressure": 985.69
+          "pressure": 986.24
         },
         {
           "time": "2026-03-03T12:00:00+07:00",
-          "pressure": 985.07
+          "pressure": 985.69
         },
         {
           "time": "2026-03-03T13:00:00+07:00",
-          "pressure": 984.46
+          "pressure": 985.15
         },
         {
           "time": "2026-03-03T14:00:00+07:00",
-          "pressure": 984.43
+          "pressure": 984.89
         },
         {
           "time": "2026-03-03T15:00:00+07:00",
-          "pressure": 984.41
+          "pressure": 984.64
         },
         {
           "time": "2026-03-03T16:00:00+07:00",
-          "pressure": 984.39
+          "pressure": 984.38
         },
         {
           "time": "2026-03-03T17:00:00+07:00",
-          "pressure": 985.02
+          "pressure": 985.01
         },
         {
           "time": "2026-03-03T18:00:00+07:00",
-          "pressure": 985.65
+          "pressure": 985.63
         },
         {
           "time": "2026-03-03T19:00:00+07:00",
-          "pressure": 986.28
+          "pressure": 986.26
         },
         {
           "time": "2026-03-03T20:00:00+07:00",
-          "pressure": 986.77
+          "pressure": 986.78
         },
         {
           "time": "2026-03-03T21:00:00+07:00",
-          "pressure": 987.26
+          "pressure": 987.3
         },
         {
           "time": "2026-03-03T22:00:00+07:00",
-          "pressure": 987.76
+          "pressure": 987.82
         },
         {
           "time": "2026-03-03T23:00:00+07:00",
-          "pressure": 987.59
+          "pressure": 987.58
         }
       ],
-      "sea_level": 0.7,
-      "water_temperature": 25.35,
-      "wind_speed": 2.32,
-      "wind_direction": 274.39,
-      "wave_height": 0.81
+      "sea_level": 0.69,
+      "water_temperature": 25.34,
+      "wind_speed": 1.94,
+      "wind_direction": 274.79,
+      "wave_height": 0.73
     },
     {
       "vietnam_date": "04/03/2026",
@@ -80350,106 +80350,106 @@
       "pressure_data": [
         {
           "time": "2026-03-04T00:00:00+07:00",
-          "pressure": 987.42
+          "pressure": 987.35
         },
         {
           "time": "2026-03-04T01:00:00+07:00",
-          "pressure": 987.25
+          "pressure": 987.11
         },
         {
           "time": "2026-03-04T02:00:00+07:00",
-          "pressure": 987.23
+          "pressure": 986.94
         },
         {
           "time": "2026-03-04T03:00:00+07:00",
-          "pressure": 987.21
+          "pressure": 986.77
         },
         {
           "time": "2026-03-04T04:00:00+07:00",
-          "pressure": 987.18
+          "pressure": 986.59
         },
         {
           "time": "2026-03-04T05:00:00+07:00",
-          "pressure": 987.64
+          "pressure": 987.09
         },
         {
           "time": "2026-03-04T06:00:00+07:00",
-          "pressure": 988.09
+          "pressure": 987.58
         },
         {
           "time": "2026-03-04T07:00:00+07:00",
-          "pressure": 988.55
+          "pressure": 988.07
         },
         {
           "time": "2026-03-04T08:00:00+07:00",
-          "pressure": 1013.69
+          "pressure": 988.56
         },
         {
           "time": "2026-03-04T09:00:00+07:00",
-          "pressure": 1014.15
+          "pressure": 989.05
         },
         {
           "time": "2026-03-04T10:00:00+07:00",
-          "pressure": 1014.61
+          "pressure": 989.54
         },
         {
           "time": "2026-03-04T11:00:00+07:00",
-          "pressure": 1013.69
+          "pressure": 988.77
         },
         {
           "time": "2026-03-04T12:00:00+07:00",
-          "pressure": 1012.77
+          "pressure": 988.0
         },
         {
           "time": "2026-03-04T13:00:00+07:00",
-          "pressure": 1011.85
+          "pressure": 987.23
         },
         {
           "time": "2026-03-04T14:00:00+07:00",
-          "pressure": 1011.57
+          "pressure": 986.79
         },
         {
           "time": "2026-03-04T15:00:00+07:00",
-          "pressure": 1011.3
+          "pressure": 986.35
         },
         {
           "time": "2026-03-04T16:00:00+07:00",
-          "pressure": 1011.03
+          "pressure": 985.91
         },
         {
           "time": "2026-03-04T17:00:00+07:00",
-          "pressure": 1011.77
+          "pressure": 986.22
         },
         {
           "time": "2026-03-04T18:00:00+07:00",
-          "pressure": 1012.51
+          "pressure": 986.53
         },
         {
           "time": "2026-03-04T19:00:00+07:00",
-          "pressure": 1013.25
+          "pressure": 986.84
         },
         {
           "time": "2026-03-04T20:00:00+07:00",
-          "pressure": 1013.94
+          "pressure": 987.21
         },
         {
           "time": "2026-03-04T21:00:00+07:00",
-          "pressure": 1014.62
+          "pressure": 987.58
         },
         {
           "time": "2026-03-04T22:00:00+07:00",
-          "pressure": 1015.3
+          "pressure": 987.95
         },
         {
           "time": "2026-03-04T23:00:00+07:00",
-          "pressure": 1015.03
+          "pressure": 987.7
         }
       ],
       "sea_level": 0.75,
-      "water_temperature": 24.79,
-      "wind_speed": 4.69,
-      "wind_direction": 0.4,
-      "wave_height": 1.3
+      "water_temperature": 24.91,
+      "wind_speed": 2.37,
+      "wind_direction": 307.55,
+      "wave_height": 1.14
     },
     {
       "vietnam_date": "05/03/2026",
@@ -80479,106 +80479,106 @@
       "pressure_data": [
         {
           "time": "2026-03-05T00:00:00+07:00",
-          "pressure": 1014.75
+          "pressure": 987.45
         },
         {
           "time": "2026-03-05T01:00:00+07:00",
-          "pressure": 1014.48
+          "pressure": 987.21
         },
         {
           "time": "2026-03-05T02:00:00+07:00",
-          "pressure": 1014.32
+          "pressure": 987.12
         },
         {
           "time": "2026-03-05T03:00:00+07:00",
-          "pressure": 1014.16
+          "pressure": 987.03
         },
         {
           "time": "2026-03-05T04:00:00+07:00",
-          "pressure": 1014.0
+          "pressure": 986.94
         },
         {
           "time": "2026-03-05T05:00:00+07:00",
-          "pressure": 1014.56
+          "pressure": 987.29
         },
         {
           "time": "2026-03-05T06:00:00+07:00",
-          "pressure": 1015.12
+          "pressure": 987.64
         },
         {
           "time": "2026-03-05T07:00:00+07:00",
-          "pressure": 1015.68
+          "pressure": 987.99
         },
         {
           "time": "2026-03-05T08:00:00+07:00",
-          "pressure": 1016.08
+          "pressure": 1014.14
         },
         {
           "time": "2026-03-05T09:00:00+07:00",
-          "pressure": 1016.49
+          "pressure": 1014.46
         },
         {
           "time": "2026-03-05T10:00:00+07:00",
-          "pressure": 1016.89
+          "pressure": 1014.79
         },
         {
           "time": "2026-03-05T11:00:00+07:00",
-          "pressure": 1016.15
+          "pressure": 1013.9
         },
         {
           "time": "2026-03-05T12:00:00+07:00",
-          "pressure": 1015.41
+          "pressure": 1013.02
         },
         {
           "time": "2026-03-05T13:00:00+07:00",
-          "pressure": 1014.66
+          "pressure": 1012.14
         },
         {
           "time": "2026-03-05T14:00:00+07:00",
-          "pressure": 1014.33
+          "pressure": 1011.95
         },
         {
           "time": "2026-03-05T15:00:00+07:00",
-          "pressure": 1014.01
+          "pressure": 1011.75
         },
         {
           "time": "2026-03-05T16:00:00+07:00",
-          "pressure": 1013.68
+          "pressure": 1011.55
         },
         {
           "time": "2026-03-05T17:00:00+07:00",
-          "pressure": 1014.3
+          "pressure": 1012.15
         },
         {
           "time": "2026-03-05T18:00:00+07:00",
-          "pressure": 1014.92
+          "pressure": 1012.74
         },
         {
           "time": "2026-03-05T19:00:00+07:00",
-          "pressure": 1015.54
+          "pressure": 1013.34
         },
         {
           "time": "2026-03-05T20:00:00+07:00",
-          "pressure": 1016.09
+          "pressure": 1014.02
         },
         {
           "time": "2026-03-05T21:00:00+07:00",
-          "pressure": 1016.65
+          "pressure": 1014.69
         },
         {
           "time": "2026-03-05T22:00:00+07:00",
-          "pressure": 1017.21
+          "pressure": 1015.37
         },
         {
           "time": "2026-03-05T23:00:00+07:00",
-          "pressure": 1016.84
+          "pressure": 1015.02
         }
       ],
-      "sea_level": 0.85,
-      "water_temperature": 24.94,
-      "wind_speed": 3.21,
-      "wind_direction": 40.73,
-      "wave_height": 1.67
+      "sea_level": 0.88,
+      "water_temperature": 24.88,
+      "wind_speed": 3.02,
+      "wind_direction": 22.46,
+      "wave_height": 1.34
     },
     {
       "vietnam_date": "06/03/2026",
@@ -80603,106 +80603,106 @@
       "pressure_data": [
         {
           "time": "2026-03-06T00:00:00+07:00",
-          "pressure": 1016.47
+          "pressure": 1014.67
         },
         {
           "time": "2026-03-06T01:00:00+07:00",
-          "pressure": 1016.1
+          "pressure": 1014.33
         },
         {
           "time": "2026-03-06T02:00:00+07:00",
-          "pressure": 1015.92
+          "pressure": 1014.21
         },
         {
           "time": "2026-03-06T03:00:00+07:00",
-          "pressure": 1015.74
+          "pressure": 1014.1
         },
         {
           "time": "2026-03-06T04:00:00+07:00",
-          "pressure": 1015.56
+          "pressure": 1013.98
         },
         {
           "time": "2026-03-06T05:00:00+07:00",
-          "pressure": 1016.11
+          "pressure": 1014.54
         },
         {
           "time": "2026-03-06T06:00:00+07:00",
-          "pressure": 1016.66
+          "pressure": 1015.1
         },
         {
           "time": "2026-03-06T07:00:00+07:00",
-          "pressure": 1017.21
+          "pressure": 1015.65
         },
         {
           "time": "2026-03-06T08:00:00+07:00",
-          "pressure": 1017.63
+          "pressure": 1016.32
         },
         {
           "time": "2026-03-06T09:00:00+07:00",
-          "pressure": 1018.05
+          "pressure": 1016.98
         },
         {
           "time": "2026-03-06T10:00:00+07:00",
-          "pressure": 1018.47
+          "pressure": 1017.64
         },
         {
           "time": "2026-03-06T11:00:00+07:00",
-          "pressure": 1017.67
+          "pressure": 1016.96
         },
         {
           "time": "2026-03-06T12:00:00+07:00",
-          "pressure": 1016.88
+          "pressure": 1016.27
         },
         {
           "time": "2026-03-06T13:00:00+07:00",
-          "pressure": 1016.08
+          "pressure": 1015.58
         },
         {
           "time": "2026-03-06T14:00:00+07:00",
-          "pressure": 1015.74
+          "pressure": 1015.18
         },
         {
           "time": "2026-03-06T15:00:00+07:00",
-          "pressure": 1015.4
+          "pressure": 1014.78
         },
         {
           "time": "2026-03-06T16:00:00+07:00",
-          "pressure": 1015.06
+          "pressure": 1014.37
         },
         {
           "time": "2026-03-06T17:00:00+07:00",
-          "pressure": 1015.6
+          "pressure": 1014.89
         },
         {
           "time": "2026-03-06T18:00:00+07:00",
-          "pressure": 1016.14
+          "pressure": 1015.4
         },
         {
           "time": "2026-03-06T19:00:00+07:00",
-          "pressure": 1016.69
+          "pressure": 1015.91
         },
         {
           "time": "2026-03-06T20:00:00+07:00",
-          "pressure": 1017.07
+          "pressure": 1016.27
         },
         {
           "time": "2026-03-06T21:00:00+07:00",
-          "pressure": 1017.45
+          "pressure": 1016.63
         },
         {
           "time": "2026-03-06T22:00:00+07:00",
-          "pressure": 1017.83
+          "pressure": 1016.98
         },
         {
           "time": "2026-03-06T23:00:00+07:00",
-          "pressure": 1017.49
+          "pressure": 1016.64
         }
       ],
-      "sea_level": 0.89,
-      "water_temperature": 24.99,
-      "wind_speed": 1.08,
-      "wind_direction": 17.33,
-      "wave_height": 2.28
+      "sea_level": 0.96,
+      "water_temperature": 24.64,
+      "wind_speed": 4.05,
+      "wind_direction": 63.72,
+      "wave_height": 1.72
     },
     {
       "vietnam_date": "07/03/2026",
@@ -80732,106 +80732,106 @@
       "pressure_data": [
         {
           "time": "2026-03-07T00:00:00+07:00",
-          "pressure": 1017.14
+          "pressure": 1016.3
         },
         {
           "time": "2026-03-07T01:00:00+07:00",
-          "pressure": 1016.8
+          "pressure": 1015.97
         },
         {
           "time": "2026-03-07T02:00:00+07:00",
-          "pressure": 1016.64
+          "pressure": 1015.79
         },
         {
           "time": "2026-03-07T03:00:00+07:00",
-          "pressure": 1016.49
+          "pressure": 1015.61
         },
         {
           "time": "2026-03-07T04:00:00+07:00",
-          "pressure": 1016.33
+          "pressure": 1015.43
         },
         {
           "time": "2026-03-07T05:00:00+07:00",
-          "pressure": 1016.86
+          "pressure": 1016.06
         },
         {
           "time": "2026-03-07T06:00:00+07:00",
-          "pressure": 1017.39
+          "pressure": 1016.69
         },
         {
           "time": "2026-03-07T07:00:00+07:00",
-          "pressure": 1017.92
+          "pressure": 1017.32
         },
         {
           "time": "2026-03-07T08:00:00+07:00",
-          "pressure": 1018.22
+          "pressure": 1017.68
         },
         {
           "time": "2026-03-07T09:00:00+07:00",
-          "pressure": 1018.53
+          "pressure": 1018.04
         },
         {
           "time": "2026-03-07T10:00:00+07:00",
-          "pressure": 1018.84
+          "pressure": 1018.4
         },
         {
           "time": "2026-03-07T11:00:00+07:00",
-          "pressure": 1017.83
+          "pressure": 1017.49
         },
         {
           "time": "2026-03-07T12:00:00+07:00",
-          "pressure": 1016.83
+          "pressure": 1016.59
         },
         {
           "time": "2026-03-07T13:00:00+07:00",
-          "pressure": 1015.83
+          "pressure": 1015.68
         },
         {
           "time": "2026-03-07T14:00:00+07:00",
-          "pressure": 1015.86
+          "pressure": 1015.25
         },
         {
           "time": "2026-03-07T15:00:00+07:00",
-          "pressure": 1015.89
+          "pressure": 1014.81
         },
         {
           "time": "2026-03-07T16:00:00+07:00",
-          "pressure": 1015.93
+          "pressure": 1014.37
         },
         {
           "time": "2026-03-07T17:00:00+07:00",
-          "pressure": 1016.45
+          "pressure": 1014.82
         },
         {
           "time": "2026-03-07T18:00:00+07:00",
-          "pressure": 1016.97
+          "pressure": 1015.26
         },
         {
           "time": "2026-03-07T19:00:00+07:00",
-          "pressure": 1017.5
+          "pressure": 1015.71
         },
         {
           "time": "2026-03-07T20:00:00+07:00",
-          "pressure": 1017.94
+          "pressure": 1016.23
         },
         {
           "time": "2026-03-07T21:00:00+07:00",
-          "pressure": 1018.38
+          "pressure": 1016.75
         },
         {
           "time": "2026-03-07T22:00:00+07:00",
-          "pressure": 1018.82
+          "pressure": 1017.27
         },
         {
           "time": "2026-03-07T23:00:00+07:00",
-          "pressure": 1018.59
+          "pressure": 1016.89
         }
       ],
-      "sea_level": 0.92,
-      "water_temperature": 24.72,
-      "wind_speed": 1.39,
-      "wind_direction": 62.82,
-      "wave_height": 2.39
+      "sea_level": 0.95,
+      "water_temperature": 24.58,
+      "wind_speed": 1.58,
+      "wind_direction": 73.69,
+      "wave_height": 2.04
     },
     {
       "vietnam_date": "08/03/2026",
@@ -80861,106 +80861,106 @@
       "pressure_data": [
         {
           "time": "2026-03-08T00:00:00+07:00",
-          "pressure": 1018.36
+          "pressure": 1016.51
         },
         {
           "time": "2026-03-08T01:00:00+07:00",
-          "pressure": 1018.14
+          "pressure": 1016.12
         },
         {
           "time": "2026-03-08T02:00:00+07:00",
-          "pressure": 1017.95
+          "pressure": 1016.06
         },
         {
           "time": "2026-03-08T03:00:00+07:00",
-          "pressure": 1017.77
+          "pressure": 1015.99
         },
         {
           "time": "2026-03-08T04:00:00+07:00",
-          "pressure": 1017.59
+          "pressure": 1015.93
         },
         {
           "time": "2026-03-08T05:00:00+07:00",
-          "pressure": 1018.1
+          "pressure": 1016.58
         },
         {
           "time": "2026-03-08T06:00:00+07:00",
-          "pressure": 1018.61
+          "pressure": 1017.24
         },
         {
           "time": "2026-03-08T07:00:00+07:00",
-          "pressure": 1019.12
+          "pressure": 1017.9
         },
         {
           "time": "2026-03-08T08:00:00+07:00",
-          "pressure": 1019.32
+          "pressure": 1017.95
         },
         {
           "time": "2026-03-08T09:00:00+07:00",
-          "pressure": 1019.51
+          "pressure": 1018.0
         },
         {
           "time": "2026-03-08T10:00:00+07:00",
-          "pressure": 1019.71
+          "pressure": 1018.05
         },
         {
           "time": "2026-03-08T11:00:00+07:00",
-          "pressure": 1018.78
+          "pressure": 1017.1
         },
         {
           "time": "2026-03-08T12:00:00+07:00",
-          "pressure": 1017.86
+          "pressure": 1016.15
         },
         {
           "time": "2026-03-08T13:00:00+07:00",
-          "pressure": 1016.93
+          "pressure": 1015.2
         },
         {
           "time": "2026-03-08T14:00:00+07:00",
-          "pressure": 1016.35
+          "pressure": 1014.72
         },
         {
           "time": "2026-03-08T15:00:00+07:00",
-          "pressure": 1015.77
+          "pressure": 1014.25
         },
         {
           "time": "2026-03-08T16:00:00+07:00",
-          "pressure": 1015.19
+          "pressure": 1013.78
         },
         {
           "time": "2026-03-08T17:00:00+07:00",
-          "pressure": 1015.57
+          "pressure": 1014.33
         },
         {
           "time": "2026-03-08T18:00:00+07:00",
-          "pressure": 1015.95
+          "pressure": 1014.88
         },
         {
           "time": "2026-03-08T19:00:00+07:00",
-          "pressure": 1016.33
+          "pressure": 1015.43
         },
         {
           "time": "2026-03-08T20:00:00+07:00",
-          "pressure": 1016.63
+          "pressure": 1015.94
         },
         {
           "time": "2026-03-08T21:00:00+07:00",
-          "pressure": 1016.93
+          "pressure": 1016.45
         },
         {
           "time": "2026-03-08T22:00:00+07:00",
-          "pressure": 1017.23
+          "pressure": 1016.96
         },
         {
           "time": "2026-03-08T23:00:00+07:00",
-          "pressure": 1017.0
+          "pressure": 1016.65
         }
       ],
-      "sea_level": 0.96,
-      "water_temperature": 24.61,
-      "wind_speed": 1.31,
-      "wind_direction": 47.49,
-      "wave_height": 1.74
+      "sea_level": 0.94,
+      "water_temperature": 24.59,
+      "wind_speed": 1.29,
+      "wind_direction": 89.05,
+      "wave_height": 2.12
     },
     {
       "vietnam_date": "09/03/2026",
@@ -80990,106 +80990,235 @@
       "pressure_data": [
         {
           "time": "2026-03-09T00:00:00+07:00",
-          "pressure": 1016.78
+          "pressure": 1016.34
         },
         {
           "time": "2026-03-09T01:00:00+07:00",
-          "pressure": 1016.55
+          "pressure": 1016.04
         },
         {
           "time": "2026-03-09T02:00:00+07:00",
-          "pressure": 1016.21
+          "pressure": 1015.85
         },
         {
           "time": "2026-03-09T03:00:00+07:00",
-          "pressure": 1015.87
+          "pressure": 1015.67
         },
         {
           "time": "2026-03-09T04:00:00+07:00",
-          "pressure": 1015.53
+          "pressure": 1015.48
         },
         {
           "time": "2026-03-09T05:00:00+07:00",
-          "pressure": 1015.94
+          "pressure": 1016.09
         },
         {
           "time": "2026-03-09T06:00:00+07:00",
-          "pressure": 1016.35
+          "pressure": 1016.7
         },
         {
           "time": "2026-03-09T07:00:00+07:00",
-          "pressure": 1016.76
+          "pressure": 1017.31
         },
         {
           "time": "2026-03-09T08:00:00+07:00",
-          "pressure": 1016.84
+          "pressure": 1017.54
         },
         {
           "time": "2026-03-09T09:00:00+07:00",
-          "pressure": 1016.91
+          "pressure": 1017.77
         },
         {
           "time": "2026-03-09T10:00:00+07:00",
-          "pressure": 1016.98
+          "pressure": 1018.0
         },
         {
           "time": "2026-03-09T11:00:00+07:00",
-          "pressure": 1015.83
+          "pressure": 1017.16
         },
         {
           "time": "2026-03-09T12:00:00+07:00",
-          "pressure": 1014.68
+          "pressure": 1016.32
         },
         {
           "time": "2026-03-09T13:00:00+07:00",
-          "pressure": 1013.53
+          "pressure": 1015.48
         },
         {
           "time": "2026-03-09T14:00:00+07:00",
-          "pressure": 1013.14
+          "pressure": 1015.17
         },
         {
           "time": "2026-03-09T15:00:00+07:00",
-          "pressure": 1012.74
+          "pressure": 1014.86
         },
         {
           "time": "2026-03-09T16:00:00+07:00",
-          "pressure": 1012.35
+          "pressure": 1014.55
         },
         {
           "time": "2026-03-09T17:00:00+07:00",
-          "pressure": 1013.11
+          "pressure": 1015.17
         },
         {
           "time": "2026-03-09T18:00:00+07:00",
-          "pressure": 1013.86
+          "pressure": 1015.79
         },
         {
           "time": "2026-03-09T19:00:00+07:00",
-          "pressure": 1014.61
+          "pressure": 1016.41
         },
         {
           "time": "2026-03-09T20:00:00+07:00",
-          "pressure": 1015.22
+          "pressure": 1016.96
         },
         {
           "time": "2026-03-09T21:00:00+07:00",
-          "pressure": 1015.83
+          "pressure": 1017.51
         },
         {
           "time": "2026-03-09T22:00:00+07:00",
-          "pressure": 1016.45
+          "pressure": 1018.06
         },
         {
           "time": "2026-03-09T23:00:00+07:00",
-          "pressure": 1016.05
+          "pressure": 1017.79
+        }
+      ],
+      "sea_level": 0.93,
+      "water_temperature": 24.55,
+      "wind_speed": 1.38,
+      "wind_direction": 93.26,
+      "wave_height": 1.66
+    },
+    {
+      "vietnam_date": "10/03/2026",
+      "lunar_date": "22/01",
+      "tidal_data": [
+        {
+          "time": "2026-03-10T03:40:00+07:00",
+          "height": 0.02,
+          "type": "high"
+        },
+        {
+          "time": "2026-03-10T06:54:00+07:00",
+          "height": -0.03,
+          "type": "low"
+        },
+        {
+          "time": "2026-03-10T13:52:00+07:00",
+          "height": 0.27,
+          "type": "high"
+        },
+        {
+          "time": "2026-03-10T21:50:00+07:00",
+          "height": -0.31,
+          "type": "low"
+        }
+      ],
+      "pressure_data": [
+        {
+          "time": "2026-03-10T00:00:00+07:00",
+          "pressure": 1017.52
+        },
+        {
+          "time": "2026-03-10T01:00:00+07:00",
+          "pressure": 1017.25
+        },
+        {
+          "time": "2026-03-10T02:00:00+07:00",
+          "pressure": 1016.98
+        },
+        {
+          "time": "2026-03-10T03:00:00+07:00",
+          "pressure": 1016.71
+        },
+        {
+          "time": "2026-03-10T04:00:00+07:00",
+          "pressure": 1016.44
+        },
+        {
+          "time": "2026-03-10T05:00:00+07:00",
+          "pressure": 1016.97
+        },
+        {
+          "time": "2026-03-10T06:00:00+07:00",
+          "pressure": 1017.5
+        },
+        {
+          "time": "2026-03-10T07:00:00+07:00",
+          "pressure": 1018.03
+        },
+        {
+          "time": "2026-03-10T08:00:00+07:00",
+          "pressure": 1018.35
+        },
+        {
+          "time": "2026-03-10T09:00:00+07:00",
+          "pressure": 1018.66
+        },
+        {
+          "time": "2026-03-10T10:00:00+07:00",
+          "pressure": 1018.98
+        },
+        {
+          "time": "2026-03-10T11:00:00+07:00",
+          "pressure": 1017.96
+        },
+        {
+          "time": "2026-03-10T12:00:00+07:00",
+          "pressure": 1016.94
+        },
+        {
+          "time": "2026-03-10T13:00:00+07:00",
+          "pressure": 1015.91
+        },
+        {
+          "time": "2026-03-10T14:00:00+07:00",
+          "pressure": 1015.25
+        },
+        {
+          "time": "2026-03-10T15:00:00+07:00",
+          "pressure": 1014.59
+        },
+        {
+          "time": "2026-03-10T16:00:00+07:00",
+          "pressure": 1013.93
+        },
+        {
+          "time": "2026-03-10T17:00:00+07:00",
+          "pressure": 1014.62
+        },
+        {
+          "time": "2026-03-10T18:00:00+07:00",
+          "pressure": 1015.31
+        },
+        {
+          "time": "2026-03-10T19:00:00+07:00",
+          "pressure": 1016.0
+        },
+        {
+          "time": "2026-03-10T20:00:00+07:00",
+          "pressure": 1016.39
+        },
+        {
+          "time": "2026-03-10T21:00:00+07:00",
+          "pressure": 1016.79
+        },
+        {
+          "time": "2026-03-10T22:00:00+07:00",
+          "pressure": 1017.19
+        },
+        {
+          "time": "2026-03-10T23:00:00+07:00",
+          "pressure": 1016.78
         }
       ],
       "sea_level": null,
       "water_temperature": null,
-      "wind_speed": 1.32,
-      "wind_direction": 158.95,
-      "wave_height": 1.29
+      "wind_speed": 1.44,
+      "wind_direction": 90.35,
+      "wave_height": 1.54
     }
   ]
 }
